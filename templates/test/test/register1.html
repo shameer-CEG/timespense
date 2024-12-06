@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-12 col-lg-8">
+        <form id="multi-step-form" method="POST" action="{% url 'signup' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="card shadow">
+                <div class="card-header bg-white text-center">
+                    <div class="stepper mt-3">
+                        <div class="step active-step" id="step-1">
+                            <div class="circle">1</div><br>
+                            Basic Account Credentials
+                        </div>
+                        <div class="step" id="step-2">
+                            <div class="circle">2</div><br>
+                            Personal Information
+                        </div>
+                        <div class="step" id="step-4">
+                            <div class="circle">4</div><br>
+                            Overview Information
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1: SignUpForm -->
+                <div class="card-body" id="step-1-content">
+                    <h5>Basic Account Credentials</h5>
+                    {{form|crispy }}
+                    <div class="text-end">
+                        <button type="button" class="btn btn-primary" id="next-step-1">Next</button>
+                    </div>
+                </div>
+
+                <!-- Step 2: ShopForm -->
+                <div class="card-body d-none" id="step-2-content">
+                    <h5>Shop Information</h5>
+                    {{shop_form|crispy}}
+             
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" id="prev-step-2">Previous</button>
+                        <button type="button" class="btn btn-primary" id="next-step-2">Next</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Overview -->
+                <div class="card-body d-none" id="step-4-content">
+                    <h5>Overview Information</h5>
+                    <p><strong>Username:</strong> <span id="overview-username"></span></p>
+                    <p><strong>Email:</strong> <span id="overview-email"></span></p>
+                    <p><strong>Shop Name:</strong> <span id="overview-shop-name"></span></p>
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" id="prev-step-4">Previous</button>
+                        <button type="submit" class="btn btn-success">Submit</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const step1 = document.getElementById('step-1');
+    const step2 = document.getElementById('step-2');
+    const step4 = document.getElementById('step-4');
+
+    const content1 = document.getElementById('step-1-content');
+    const content2 = document.getElementById('step-2-content');
+    const content4 = document.getElementById('step-4-content');
+
+    document.getElementById('next-step-1').addEventListener('click', function() {
+        step1.classList.remove('active-step');
+        step2.classList.add('active-step');
+        content1.classList.add('d-none');
+        content2.classList.remove('d-none');
+    });
+
+    document.getElementById('next-step-2').addEventListener('click', function() {
+        step2.classList.remove('active-step');
+        step4.classList.add('active-step');
+        content2.classList.add('d-none');
+        content4.classList.remove('d-none');
+    });
+
+    document.getElementById('prev-step-2').addEventListener('click', function() {
+        step2.classList.remove('active-step');
+        step1.classList.add('active-step');
+        content2.classList.add('d-none');
+        content1.classList.remove('d-none');
+    });
+
+    document.getElementById('prev-step-4').addEventListener('click', function() {
+        step4.classList.remove('active-step');
+        step2.classList.add('active-step');
+        content4.classList.add('d-none');
+        content2.classList.remove('d-none');
+    });
+
+    // Populate overview data
+    const username = document.getElementById('id_username');
+    const email = document.getElementById('id_email');
+    const shopName = document.getElementById('id_shop_name');
+    
+    document.getElementById('next-step-2').addEventListener('click', function() {
+        document.getElementById('overview-username').innerText = username.value;
+        document.getElementById('overview-email').innerText = email.value;
+        document.getElementById('overview-shop-name').innerText = shopName.value;
+    });
+</script>
+{% endblock %}

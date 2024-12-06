@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Activities Chart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.16.2.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h4>Hospital Activities</h4>
+        <div class="dropdown mb-3">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                Last Week
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#">Last Month</a></li>
+                <li><a class="dropdown-item" href="#">Last Year</a></li>
+            </ul>
+        </div>
+        <div id="hospitalActivitiesChart"></div>
+    </div>
+
+    <script>
+        var trace1 = {
+            x: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            y: [12, 14, 17, 18, 20, 25, 28, 24, 26, 29, 30, 27],
+            mode: 'lines+markers',
+            name: 'Patients',
+            line: { color: 'red' },
+            marker: { color: 'red' }
+        };
+        
+        var trace2 = {
+            x: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            y: [10, 17, 15, 22, 24, 27, 30, 23, 28, 31, 32, 28],
+            mode: 'lines+markers',
+            name: 'Consultations',
+            line: { color: 'blue' },
+            marker: { color: 'blue' }
+        };
+
+        var layout = {
+            hovermode: 'closest',
+            xaxis: { title: 'Months' },
+            yaxis: { title: 'Count', range: [0, 35] },
+            legend: { orientation: "h", x: 0.5, y: 1.1, xanchor: "center" }
+        };
+
+        Plotly.newPlot('hospitalActivitiesChart', [trace1, trace2], layout, { responsive: true });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

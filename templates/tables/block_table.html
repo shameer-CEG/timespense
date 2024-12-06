@@ -1,0 +1,230 @@
+{% load static %}
+<style>
+  /* Container styling */
+  .table-container {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+  }
+
+  /* Table styling */
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .table thead th {
+    background-color: #000;
+    color: #fff;
+    padding: 16px 10px;
+    text-align: center;
+    font-weight: 600;
+    /* border: none; */
+  }
+
+  .table tbody tr {
+    background-color: #fff;
+  }
+
+  .table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+
+  .table th,
+  .table td {
+    padding: 12px;
+    font-size: 15px;
+    color: #333;
+  }
+
+  .table tbody tr:hover {
+    background-color: #e6e6e6;
+    cursor: pointer;
+  }
+
+  .page-link {
+    color: black;
+  }
+
+  .page-item.active .page-link {
+    background: #000 !important;
+    border: #000 !important;
+  }
+
+  /* Action button styling */
+  .action-buttons a {
+    font-size: 14px;
+    padding: 6px 10px;
+    color: #333;
+    background-color: #e1e1e1;
+    border-radius: 6px;
+    margin-right: 5px;
+    text-decoration: none;
+  }
+
+  .action-buttons a:hover {
+    background-color: #c7c7c7;
+    color: #000;
+  }
+
+  /* DataTables button customizations */
+  .dt-buttons .btn {
+    background-color: #343a40;
+    color: #fff;
+    border-radius: 5px;
+    padding: 8px 12px;
+    margin: 5px;
+  }
+
+  .dt-buttons .btn:hover {
+    background-color: #495057;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 576px) {
+
+    .dataTables_filter input,
+    .dataTables_length select {
+      width: 100% !important;
+      margin-bottom: 10px;
+    }
+
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+      text-align: center;
+    }
+
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+      text-align: center;
+    }
+  }
+</style>
+
+<div class="container mb-3">
+  <div class="mx-1 mx-md-auto col-md-12 table-container shadow-lg">
+    {% block tableTitle %}
+    {% endblock %}
+
+    <div class="table-responsive mt-2">
+      {% block filter %}
+
+      {% endblock %}
+      <table id="baseTable" class="table table-hover  w-100">
+        <thead>
+          {% block tableHead %}
+
+          {% endblock %}
+        </thead>
+        <tbody class="table-group-divider">
+          {% block tableBody %}
+
+          {% endblock %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  var isDataTableInitialized = false;
+  var table;
+
+  $(document).ready(function () {
+    initializeDataTable();
+
+    $('#filterButton').on('click', function () {
+      filterByDate($('#startDate').val(), $('#endDate').val());
+    });
+
+    $('#reserButton').on('click', function () {
+      filterByDate($('#startDate').val(0), $('#endDate').val(0));
+    });
+
+  });
+
+  function initializeDataTable() {
+    if (!isDataTableInitialized) {
+      if ($.fn.DataTable.isDataTable('#baseTable')) {
+        $('#baseTable').DataTable().destroy();
+      }
+
+      {% block footscript %} {% endblock %}
+
+      table = $('#baseTable').DataTable({
+        dom: "<'row my-2'<'col-md-12'B>>" +
+          "<'row my-3 pt-4 pb-3'<'col-xl-3 col-lg-6 col-md-12'l><'col-xl-3 col-lg-6 col-md-12'f>>" +
+          "<'row'<'col-md-12'tr>>" +
+          "<'row pt-2 pb-5 mx-2'<'col-md-4 mt-5'i><'col-md-4 ms-5'p>>",
+        responsive: true,
+        buttons: [
+          {
+            extend: 'copy', text: "Copy", footer: true, exportOptions: { columns: ':not(:last-child)', footer: true, modifier: { page: 'all' } }, key: {
+              metaKey: true,
+              key: 'c'
+            },
+          },
+          {
+            extend: 'print', text: "Print", footer: true, exportOptions: { columns: ':not(:last-child)', footer: true, modifier: { page: 'all' } }, key: {
+              metaKey: true,
+              altKey: true,
+              key: 'p'
+            },
+          },
+          {
+            extend: 'excel', text: "Excel", footer: true, exportOptions: { columns: ':not(:last-child)', footer: true, modifier: { page: 'all' } }, key: {
+              metaKey: true,
+              altKey: true,
+              key: 'e'
+            },
+          },
+          {
+            extend: 'csv', text: "CSV", footer: true, exportOptions: { columns: ':not(:last-child)', footer: true, modifier: { page: 'all' } }, key: {
+              metaKey: true,
+              altKey: true,
+              key: 'c'
+            }
+          },
+          {
+            extend: 'pdf', text: "PDF", footer: true, exportOptions: { columns: ':not(:last-child)', footer: true, modifier: { page: 'all' } }, key: {
+              metaKey: true,
+              altKey: true,
+              key: 'p'
+            },
+          },
+          { extend: 'colvis', text: 'Column visibility' },
+          {% block script %}{% endblock %}
+        ],
+    pageLength: 10,
+      pagingType: 'full_numbers',
+        scrollCollapse: true,
+          {% block footercall %} {% endblock %}
+      });
+
+  $('.dt-buttons button').addClass('rounded-3 ms-0 me-2 mt-2');
+  isDataTableInitialized = true;
+    }
+  }
+
+  function filterByDate(startDate, endDate) {
+    $.fn.dataTable.ext.search.pop();
+
+    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+      var rowDate = new Date(data[1]);
+      var start = startDate ? new Date(startDate) : null;
+      var end = endDate ? new Date(endDate) : null;
+
+      if (!start && !end) return true;
+      if (start && rowDate < start) return false;
+      if (end && rowDate > end) return false;
+
+      return true;
+    });
+
+    table.draw();
+  }
+</script>

@@ -1,0 +1,28 @@
+{% extends 'base.html'%}
+{% load static %}
+{% block body %}
+<h1>{{ shop.shop_name }}</h1>
+<p><strong>Address:</strong> {{ shop.address }}</p>
+<p><strong>Owner:</strong> {{ shop.owner.get_full_name }}</p>
+
+<h2>Products</h2>
+<ul>
+  {% for product in products %}
+    <li>{{ product.name }} - ${{ product.price_per_unit }} ({{ product.available_stock }} in stock)</li>
+  {% endfor %}
+</ul>
+
+<h2>Employees</h2>
+<ul>
+  {% for employee in employees %}
+    <li>{{ employee.full_name }} - {{ employee.position }}</li>
+  {% endfor %}
+</ul>
+
+<h2>Shifts</h2>
+<ul>
+  {% for shift in shifts %}
+    <li>Shift {{ shift.shift_name }} on {{ shift.date }} from {{ shift.start_time }} to {{ shift.end_time }}</li>
+  {% endfor %}
+</ul>
+{% endblock %}

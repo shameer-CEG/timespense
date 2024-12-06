@@ -1,0 +1,35 @@
+<!-- templates/modals/add_employee.html -->
+<!-- templates/modals/add_employee.html -->
+{% load crispy_forms_tags %}
+
+<div class="modal fade" id="addDataModal" data-bs-backdrop="static" data-bs-keyboard="false"  tabindex="-1" aria-labelledby="addDataModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" enctype="multipart/form-data" class="mb-4">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addDataModalLabel">Add Data</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {{ form|crispy }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">{% if is_update %}Update{% else %}Save{% endif %}</button>
+                </div>
+
+                {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                <div id="auto-dismiss-alert" class="mt-5 alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+                {% endfor %}
+
+            </form>
+        </div>
+    </div>
+</div>
+

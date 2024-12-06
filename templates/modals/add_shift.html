@@ -1,0 +1,22 @@
+<!-- templates/modals/add_employee.html -->
+<!-- templates/modals/add_employee.html -->
+{% load crispy_forms_tags %}
+
+<div class="modal fade" id="addShiftModal" data-bs-backdrop="static" data-bs-keyboard="false"  tabindex="-1" aria-labelledby="addShiftModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title" id="addShiftModalLabel">Add Shift</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+

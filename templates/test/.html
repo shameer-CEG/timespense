@@ -1,0 +1,136 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{% endblock title %}</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <script src="https://kit.fontawesome.com/b98138fd17.js" crossorigin="anonymous"></script>
+
+  <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+  <!-- <link href="{% static 'DataTables/datatables.css'%}" rel="stylesheet">
+  <script src="{% static 'DataTables/datatables.js'%}"></script> -->
+
+  <style>
+    body{
+      overflow-x: hidden !important;
+    }
+    
+    .readonly-field {
+      color: #3c45bb !important;
+      border: 1px solid #3c45bb !important;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    .arrow-icon,
+    .arrow-icon1 {
+      transition: transform 0.5s ease;
+      transform: rotate(0deg);
+      /* Add transition for smooth rotation */
+    }
+
+    .border-mine {
+      border: 3px solid #3c45bb !important;
+    }
+
+    .bg-mine,
+    .btn-mine,
+    #sidebar {
+      /* background: linear-gradient(145deg, #3c45bb, #4852df); */
+      background: #3c45bb !important;
+      /* box-shadow: 22px 0px 44px #3b44b7, */
+      /* -22px 0px 44px #4b56e9; */
+    }
+
+    .btn-mine {
+      color: white !important;
+    }
+
+    .text-mine {
+      color: #3c45bb !important;
+    }
+
+
+    #navbar.sticky {
+
+      position: sticky;
+      top: -2px !important;
+      z-index: 3 !important;
+      /* Adjust the z-index as needed */
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="overlay " id="overlay"></div>
+  <!-- <div class="d-flex"> -->
+    <!-- Sidebar -->
+    <div class="mt-md-0 mt-3 bg-mine text-white active" id="sidebar">
+      <div class="sidebar-heading ">Dairy Management System</div>
+
+    </div>
+    <!-- Page Content -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-mine" id="navbar" style="height: 80px ;">
+      <a class="ms-3 navbar-brand text-break" id="menu-toggle">||| DMS</a>
+    </nav>
+    
+    <div id="content" class="active">
+
+      {% block body %}{% endblock body %}
+
+    <!-- </div> -->
+
+  </div>
+
+  <script>
+    function toggleDropdown(dropId, className) {
+      var arrowIcon = document.querySelector('.' + className);
+      console.log(arrowIcon);
+      var dropdownAccordion = document.getElementById(dropId);
+
+      if (dropdownAccordion.classList.contains('collapsed')) {
+        arrowIcon.style.transform = 'rotate(0deg)';
+      } else {
+        arrowIcon.style.transform = 'rotate(90deg)';
+      }
+    }
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const navbar = document.getElementById('navbar');
+      let prevScrollPos = window.pageYOffset;
+
+      window.onscroll = function () {
+        const currentScrollPos = window.pageYOffset;
+
+        if (prevScrollPos > currentScrollPos) {
+          navbar.classList.add('sticky');
+        } else {
+          navbar.classList.add('sticky');
+        }
+
+        prevScrollPos = currentScrollPos;
+      };
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
+    integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
+    crossorigin="anonymous"></script>
+    <script src="{% static 'js/sidebar.js' %}"></script>
+
+</body>
+
+</html>

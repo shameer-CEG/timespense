@@ -1,0 +1,168 @@
+
+  <!-- Sidebar -->
+  {% if request.get_full_path != '/' and request.get_full_path != 'signup/' %}
+  <div class="d-flex">
+    <div class="mt-md-0 mt-3 bg-mine active" id="sidebar">
+      <div class="sidebar-heading ">CPT Leave Management</div>
+    </div>
+    {% endif %}
+    <!-- Page Content -->
+    <div id="content" class="active">
+
+      <nav class="navbar navbar-expand-lg bg-mine" id="navbar" style="height: 80px;">
+        <a class="ms-3 navbar-brand text-break" id="menu-toggle">||| CPT_ELMS</a>
+      </nav>
+
+
+      {% block body %}{% endblock body %}
+
+      {% if request.get_full_path != '/' %}
+    </div>
+    {% endif %}
+
+  </div>
+
+  //    document.addEventListener("DOMContentLoaded", function () {
+    let currentStep = 0;
+    const steps = document.querySelectorAll(".stepForm");
+    const nextBtns = document.querySelectorAll(".nextBtn");
+    const prevBtns = document.querySelectorAll(".prevBtn");
+    const alertBox = document.getElementById("alertBox");
+
+    // Show the current step
+    function showStep(stepIndex) {
+        steps.forEach((step, index) => {
+            step.classList.toggle("active", index === stepIndex);
+        });
+
+        clearAlert();  // Clear the alert box when switching steps
+        validateCurrentStep(); // Validate inputs for the current step
+        updateOverview(); // Update the overview if on the last step
+    }
+
+    // Validate the inputs in the current step
+    function validateCurrentStep() {
+        const currentForm = steps[currentStep];
+        const inputs = currentForm.querySelectorAll("input[required], select[required], textarea[required]");
+        let isValid = true;
+
+        inputs.forEach(input => {
+            if (!input.checkValidity()) {
+                isValid = false;
+                input.classList.add("is-invalid");
+            } else {
+                input.classList.remove("is-invalid");
+            }
+        });
+
+        const nextBtn = currentForm.querySelector(".nextBtn");
+        if (nextBtn) {
+            nextBtn.disabled = !isValid;
+        }
+    }
+
+    // Show validation errors in the alert box
+    function validateInputsBeforeNext() {
+        const currentForm = steps[currentStep];
+        const inputs = currentForm.querySelectorAll("input[required], select[required], textarea[required]");
+        let isValid = true;
+
+        clearAlert(); // Clear the previous alert messages
+
+        inputs.forEach(input => {
+            if (!input.checkValidity()) {
+                isValid = false;
+                showAlert(input.name, input.validationMessage);
+            }
+        });
+
+        return isValid;
+    }
+
+    // Display alert message for invalid inputs
+    function showAlert(field, message) {
+        const alertMessage = `<p>${field}: ${message}</p>`;
+        alertBox.innerHTML += alertMessage;
+    }
+
+    // Clear the alert box
+    function clearAlert() {
+        alertBox.innerHTML = '';
+    }
+
+    // Update the overview with form input values
+    function updateOverview() {
+        if (currentStep === steps.length - 1) {  // If it's the last step
+            document.getElementById("emailDisplay").innerText = document.querySelector("input[name='email']").value;
+            document.getElementById("usernameDisplay").innerText = document.querySelector("input[name='username']").value;
+            document.getElementById("numberDisplay").innerText = document.querySelector("input[name='user_phone_number']").value;
+            document.getElementById("shopNameDisplay").innerText = document.querySelector("input[name='shop_name']").value;
+            
+            // Get the selected image
+            const fileInput = document.querySelector("input[name='shop_image']");
+            const fileList = fileInput.files;
+            if (fileList.length > 0) {
+                const imageUrl = URL.createObjectURL(fileList[0]); // Create an object URL
+                document.getElementById("logoDisplay").src = imageUrl; // Set the image source
+            }
+
+            document.getElementById("shopAddressDisplay").innerText = document.querySelector("textarea[name='shop_address']").value;
+            document.getElementById("shopPhoneDisplay").innerText = document.querySelector("input[name='shop_phone_number']").value;
+            document.getElementById("shopEmailDisplay").innerText = document.querySelector("input[name='shop_email']").value;
+        }
+    }
+
+    // Handle "Next" button click
+    nextBtns.forEach(btn => {
+        btn.addEventListener("click", function () {
+            if (validateInputsBeforeNext()) {
+                currentStep++;
+                showStep(currentStep);
+            }
+        });
+    });
+
+    // Handle "Previous" button click
+    prevBtns.forEach(btn => {
+        btn.addEventListener("click", function () {
+            if (currentStep > 0) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        });
+    });
+
+    // Validate inputs in real-time as the user types
+    document.querySelectorAll("input[required], select[required], textarea[required]").forEach(input => {
+        input.addEventListener("input", validateCurrentStep);
+    });
+
+    // Image preview functionality
+    document.getElementById('id_shop_image').addEventListener('change', function () {
+        const fileInput = this;
+        const fileList = fileInput.files;
+        const previewContainer = document.getElementById('image-preview');
+
+        // Clear previous previews
+        previewContainer.innerHTML = '';
+
+        if (fileList.length > 0) {
+            Array.from(fileList).forEach(file => {
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result; // Set the image source to the result of FileReader
+                    previewContainer.appendChild(img); // Append the image to the preview container
+                };
+
+                reader.readAsDataURL(file); // Read the file as a data URL
+            });
+        } else {
+            previewContainer.innerHTML = '<p>No image selected.</p>';
+        }
+    });
+
+    // Initialize the first step
+    showStep(currentStep);
+});

@@ -1,0 +1,25 @@
+{% load crispy_forms_tags %}
+
+<div class="modal fade" id="addEditModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+  aria-labelledby="addEditModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" enctype="multipart/form-data" class="mb-4"
+        action="{% if is_update %}{% url 'update_employee' shop_id=shop.encoded_shop_id employee_id=employee.encoded_employee_id %}{% else %}{% url 'employee_list' shop_id=shop.encoded_shop_id %}{% endif %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="addEditModalLabel">{% if is_update %}Edit Employee{% else %}Add Employee{% endif
+            %}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          {{ form|crispy }}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">{% if is_update %}Update{% else %}Save{% endif %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

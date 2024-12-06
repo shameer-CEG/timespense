@@ -1,0 +1,681 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{% endblock title %}</title>
+
+  <script src="{% static 'vendors/scripts/jquery-3.7.1.min.js'%}"></script>
+  <script src="{% static 'vendors/scripts/font-awesome.js'%}"></script>
+  <!-- jQuery -->
+
+  <link href="{% static 'DataTables/datatables.css'%}" rel="stylesheet">
+
+
+  <!-- <link href="{% static 'apexcharts/apexcharts.css'%}" rel="stylesheet"> -->
+  <script type="text/javascript" src="{% static 'apexcharts/apexcharts.min.js'%}"></script>
+  <!-- <script type="text/javascript" src="{% static 'vendors/apexchart/apexcharts.min.js'%}"></script> -->
+
+
+  <!-- <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script> -->
+
+  <!-- <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script> -->
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <link rel="stylesheet" href="{% static 'vendors/bootstrap-5.3.3/css/bootstrap.min.css' %}">
+
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+    crossorigin="anonymous"></script>
+
+
+  <script type="text/javaScript" src="{% static 'vendors/bootstrap-5.3.3/js/bootstrap.min.js' %}"></script>
+
+  <script type="text/javascript" src="https://unpkg.com/default-passive-events"></script>
+
+  <style>
+    html,
+    body {
+      height: 100%;
+      /* Ensures it spans the viewport */
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      background: #ecf0f4;
+      /* background-image: radial-gradient(#bfc0c1 7.6%, transparent 0);
+      background-size: 25px 25px;
+      background-attachment: fixed;
+      clip-path: inset(0 0 10px 0); */
+
+      /* Prevents horizontal scrolling */
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      /* Prevents element size inconsistencies */
+    }
+
+
+    #navbar.sticky {
+
+      position: sticky;
+      top: 2px;
+      z-index: 3 !important;
+      /* Adjust the z-index as needed */
+    }
+
+    .scrolled {
+      padding-top: 0px;
+      /* Adjust the height of your navbar */
+    }
+
+    #sidebar {
+      height: 100vh !important;
+      min-width: 80px;
+      width: 270px;
+      position: fixed !important;
+      top: 0 !important;
+      left: -270px;
+      padding-top: 56px;
+      transition: all 0.3s;
+      z-index: 5 !important;
+      background: #fff !important;
+      border: 1px solid #ffff;
+      color: #0164c7 !important;
+      overflow-y: auto !important;
+    }
+
+    #overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      /* Semi-transparent black overlay */
+      z-index: 4 !important;
+      /* Higher than other elements but lower than the sidebar */
+    }
+
+    @media (max-width: 768px) {
+      #overlay.active {
+        display: block;
+      }
+    }
+
+    #sidebar.active+#overlay {
+      display: block !important;
+    }
+
+    #menu-toggle {
+      cursor: pointer !important;
+    }
+
+
+    #content {
+      width: 100%;
+      transition: all 0.3s;
+      margin-left: 0;
+    }
+
+    @media (min-width: 768px) {
+      #sidebar.active {
+        left: 0;
+      }
+
+      #content.active {
+        margin-left: 270px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      #sidebar {
+        left: 0;
+      }
+
+      #content {
+        margin-left: 0;
+      }
+
+      #sidebar.active {
+        left: -270px;
+      }
+
+      #content.active {
+        margin-left: 0;
+      }
+    }
+
+
+
+    #navbar.sticky {
+
+      position: sticky;
+      top: -2px !important;
+      z-index: 3 !important;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #ecf0f4 !important;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: gray;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #1e90ff;
+    }
+
+    /* General Styling */
+    .form-select,
+    .form-control,
+    .btn {
+      box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+      transition: all 0.2s ease;
+    }
+
+    /* Hover Effects */
+    .form-select:hover,
+    .form-control:hover,
+    .btn:hover {
+      box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+      transform: translateY(-2px);
+    }
+
+    /* Focus/Active Effects */
+    .form-select:focus,
+    .form-control:focus,
+    .btn:focus,
+    .btn.active {
+      border-color: #007bff;
+      box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+      outline: none;
+    }
+
+    /* Filter Section Styling */
+    .filters-section {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+      margin-bottom: 20px;
+    }
+
+    .chart-card {
+      box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+      padding: 20px;
+      border-radius: 8px;
+      background-color: #fff;
+      margin-bottom: 20px;
+      transition: transform 0.2s ease;
+    }
+
+
+    /* Card styles */
+    .card {
+      border-radius: 12px;
+      box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+      transition: transform 0.2s ease;
+    }
+
+
+    .card:hover,
+    .chart-card:hover {
+      transform: scale(1.02);
+      z-index: 3 !important;
+    }
+
+
+    .filter-card {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    }
+
+    .apexcharts-xaxis-label {
+      white-space: pre-line;
+      text-align: left;
+    }
+
+    /* Rotate the angle icon on collapse */
+    .rotate-icon {
+      transition: transform 0.3s;
+    }
+
+    .nav-link.collapsed .rotate-icon {
+      transform: rotate(0deg);
+    }
+
+    .nav-link:not(.collapsed) .rotate-icon {
+      transform: rotate(90deg);
+    }
+
+    /* Icon styling */
+    .dropdown-item i {
+      font-size: 1rem;
+    }
+
+    #sidebar .nav-item,
+    .dropdown-item {
+      color: #0164c7;
+      padding: 10px 15px;
+      font-size: 14px;
+      font-weight: 500;
+      margin: 3px 0;
+      border-radius: 10px;
+      transition: 0.15s all ease-in;
+    }
+
+    .nav-item:hover .dropdown-item {
+      color: #fff;
+    }
+
+    #sidebar .nav-item:hover,
+    #sidebar .nav-item:active,
+    #sidebar .nav-item:focus {
+      background: #0164c7;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    #sidebar .dropdown-item:hover {
+      background: #fff;
+      color: #0164c7;
+      font-size: 15px;
+    }
+
+    #navbar,
+    .dropdown-menu {
+      box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px !important;
+    }
+
+    .logo-bg {
+      background: #0164c7;
+      border-radius: 10px;
+    }
+
+
+    .breadcrumb-item a {
+      font-size: 16px;
+      font-weight: 500;
+      text-decoration: none;
+      color: #6c757d;
+      /* Keep the gray color */
+      color: #0164c7;
+      transition: all 0.3s ease;
+    }
+
+    .active-breadcrumb {
+      position: relative;
+      display: inline-block;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .active-breadcrumb:hover {
+      transform: translateY(-3px);
+      z-index: 3 !important;
+    }
+
+    .active-breadcrumb::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 0;
+      height: 2px;
+      background: #0164c7;
+      transform: translateX(-50%);
+      transform-origin: center;
+      transition: width 0.6s ease;
+    }
+
+    .active-breadcrumb:hover::after {
+      width: 100%;
+    }
+
+
+    .breadcrumb {
+      margin-bottom: 20px;
+      background-color: #ffff !important;
+      padding: 25px 20px;
+      border-radius: 5px;
+      transition: transform 0.2s ease;
+      box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    }
+
+    .current-breadcrumb {
+      color: #6c757d !important;
+      /* Keep the gray color */
+      pointer-events: none;
+    }
+
+
+    .no-data-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.25rem;
+      color: #555;
+      text-align: center;
+    }
+
+    .sales-chart,.profits-chart,.expenses-chart {
+        position: relative;
+        height: 100%;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <script>
+
+    function isEmpty(obj) {
+      for (var prop in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+          return false;
+        }
+      }
+
+      return true
+    }
+
+    function getLegendOptions() {
+      // Default legend settings
+      const legendOptions = {
+        fontSize: '14px',
+        fontWeight: 600,
+        offsetY: 5,
+      };
+
+      // Check if screen width is below a certain threshold (e.g., 768px for mobile devices)
+      if (window.innerWidth <= 768) {
+        legendOptions.position = 'bottom';
+        legendOptions.horizontalAlign = 'center';
+      }
+
+      console.log(legendOptions);
+
+
+      return legendOptions;
+    }
+  </script>
+
+  <div class="overlay " id="overlay"></div>
+  <div class="d-flex">
+    <!-- Sidebar -->
+    <div class="mt-md-0 text-white active" id="sidebar">
+      <div class="mx-2"> <a href="{% url 'login' %}" class="ms-1 py-4 px-2 logo-bg">
+          <img src="{% static 'img/logo.png' %}" class="img-responsive" alt=""
+            style="border-radius:10px; width: 200px; height: 80px;" />
+        </a>
+      </div>
+      {% if shop.shop_id %}
+      <!-- Sidebar for a specific shop -->
+      <ul class="navbar-nav ms-md-4 mx-3 my-5 text-white">
+        <!-- Shop Dashboard -->
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'shop_profile' shop_id=shop.encoded_shop_id %}" id="admin">
+            <i class="fa-solid fa-chart-line me-2"></i> Dashboard
+          </a>
+        </li>
+        <!-- Analytics Links -->
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'sales_dashboard' shop_id=shop.encoded_shop_id %}">
+            <i class="fa-solid fa-chart-bar me-2"></i> Sales Analytics
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'expenses_dashboard' shop_id=shop.encoded_shop_id %}">
+            <i class="fa-solid fa-wallet me-2"></i> Expenses Analytics
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'profits_dashboard' shop_id=shop.encoded_shop_id %}">
+            <i class="fa-solid fa-dollar-sign me-2"></i> Profit Analytics 
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'stock_list' shop_id=shop.encoded_shop_id %}">
+            <i class="fa-solid fa-warehouse me-2"></i>Stock
+          </a>
+        </li>
+
+        <!-- Shop Management Dropdown -->
+        <li class="nav-item">
+          <a class="nav-link collapsed" data-bs-toggle="collapse" href="#shopManagementDropdown" role="button"
+            aria-expanded="false" aria-controls="shopManagementDropdown">
+            <i class="fa-solid fa-store me-2"></i> Manage Shop
+            <i class="fa-solid fa-angle-right ms-5 rotate-icon"></i>
+          </a>
+          <div class="collapse" id="shopManagementDropdown">
+            <ul class="nav flex-column ps-3 mb-3">
+              <li>
+                <a class="dropdown-item my-2 py-2" href="{% url 'employee_list' shop_id=shop.encoded_shop_id %}">
+                  Employees
+                  <i class="fa-solid fa-users ms-2"></i>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item mb-1 py-2" href="{% url 'product_list' shop_id=shop.encoded_shop_id %}">
+                  Products
+                  <i class="fa-solid fa-box-open ms-2"></i>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item mb-1 py-2" href="{% url 'shift_list' shop_id=shop.encoded_shop_id %}">
+                  Shifts
+                  <i class="fa-solid fa-clock ms-2"></i>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item mb-1 py-2" href="{% url 'expense_type_list' shop_id=shop.encoded_shop_id %}">
+                  Expense Types
+                  <i class="fa-solid fa-money-check ms-2"></i>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </li>
+
+        <!-- Overall Dashboard -->
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'overall_dashboard' %}" id="admin">
+            <i class="fa-solid fa-tachometer-alt me-2"></i> Overall Dashboard
+          </a>
+        </li>
+
+        {% else %}
+        <!-- Sidebar for overall (non-shop-specific) view -->
+        <ul class="navbar-nav ms-md-4 mx-3 mb-5 text-white">
+
+          <!-- Overall Dashboard -->
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'overall_dashboard' %}" id="admin">
+              <i class="fa-solid fa-tachometer-alt me-2"></i> Overall Dashboard
+            </a>
+          </li>
+
+          <!-- Overall Shops Management -->
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'overall_shop_list' %}" id="admin">
+              <i class="fa-solid fa-store me-2"></i> All Shops
+            </a>
+          </li>
+
+          <!-- Employee Management -->
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'overall_employee_list' %}" id="admin">
+              <i class="fa-solid fa-user-tie me-2"></i> Manage Employees
+            </a>
+          </li>
+
+          <!-- Products and Stock Management -->
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'overall_product_list' %}" id="admin">
+              <i class="fa-solid fa-boxes-stacked me-2"></i> Product Categories
+            </a>
+          </li>
+
+          <!-- Overall Analytics Dropdown -->
+          <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-toggle="collapse" href="#overallAnalyticsDropdown" role="button"
+              aria-expanded="false" aria-controls="overallAnalyticsDropdown">
+              <i class="fa-solid fa-chart-line me-2"></i> Overall Analytics
+              <i class="fa-solid fa-angle-right ms-3 rotate-icon"></i>
+            </a>
+            <div class="collapse" id="overallAnalyticsDropdown">
+              <ul class="nav flex-column ps-3 mb-3">
+                <li>
+                  <a class="dropdown-item my-2 py-2" href="{% url 'overall_sales_dashboard' %}">
+                    Sales Analytics
+                    <i class="fa-solid fa-chart-bar ms-2"></i>
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item my-2 py-2" href="{% url 'overall_expenses_dashboard' %}">
+                    Expenses Analytics
+                    <i class="fa-solid fa-wallet ms-2"></i>
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item my-2 py-2" href="{% url 'overall_profits_dashboard' %}">
+                    Profit Analytics
+                    <i class="fa-solid fa-dollar-sign ms-2 "></i>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+          {% endif %}
+    </div>
+    <!-- Page Content -->
+    <div id="content" class="active">
+
+      <nav class="navbar navbar-expand-lg bg-white" id="navbar" style="height: 80px ;">
+        <a class="ms-3 navbar-brand d-flex align-items-center" id="menu-toggle">
+          <i class="fas fa-bars me-2"></i>
+          <!-- <h5 class="mb-0">{{ shop.shop_name|default:"Over All" }} Analytics</h4> -->
+        </a>
+
+        <div class="dropdown-center  ms-auto me-md-5 me-4">
+          <a class="text-decoration-none text-dark dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <img src="{{user.profile_image.url}}" class="img-thumbnail" alt=""
+              style="border-radius:100%; width: 50px; height: 50px;" />
+            <span class="user-name">{{user.name}}</span>
+          </a>
+          <ul class="mt-1 dropdown-menu dropdown-menu-center">
+            {% if shop.shop_id %}
+            <li>
+              <a class="dropdown-item" href="{% url 'shop_update_user' shop_id=shop.encoded_shop_id  %}"><i
+                  class="fas fa-user"></i> Profile</a>
+            </li>
+            <li>
+              <!-- Icon for Shop Profile -->
+              <a class="dropdown-item" href="{% url 'update_shop' shop_id=shop.encoded_shop_id %}">
+                <i class="fas fa-edit"></i> Shop Profile
+              </a>
+            </li>
+            <li>
+              <!-- Icon for All Shops -->
+              <a class="dropdown-item" href="{% url 'overall_shop_list' %}">
+                <i class="fas fa-list"></i> All Shops
+              </a>
+            </li>
+
+            <li>
+              <a class="dropdown-item" href="{% url 'shop_change_password' shop_id=shop.encoded_shop_id %}"><i
+                  class="fas fa-key"></i> Change
+                Passwoord</a>
+            </li>
+
+            {% else %}
+            <li>
+              <a class="dropdown-item" href="{% url 'update_user' %}"><i class="fas fa-user"></i> Profile</a>
+            </li>
+
+
+            <li>
+              <a class="dropdown-item" href="{% url 'change_password'  %}"><i class="fas fa-key"></i> Change
+                Passwoord</a>
+            </li>
+
+            {% endif %}
+
+            <li>
+              <a class="dropdown-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+            </li>
+          </ul>
+        </div>
+
+      </nav>
+
+      {% block body %}{% endblock body %}
+    </div>
+
+  </div>
+
+
+  <script>
+    function toggleDropdown(dropId, className) {
+      var arrowIcon = document.querySelector('.' + className);
+      console.log(arrowIcon);
+      var dropdownAccordion = document.getElementById(dropId);
+
+      if (dropdownAccordion.classList.contains('collapsed')) {
+        arrowIcon.style.transform = 'rotate(0deg)';
+      } else {
+        arrowIcon.style.transform = 'rotate(90deg)';
+      }
+    }
+  </script>
+
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+      const navbar = document.getElementById('navbar');
+      let prevScrollPos = window.pageYOffset;
+
+      window.onscroll = function () {
+        const currentScrollPos = window.pageYOffset;
+
+        if (prevScrollPos > currentScrollPos) {
+          navbar.classList.add('sticky');
+        } else {
+          navbar.classList.add('sticky');
+        }
+
+        prevScrollPos = currentScrollPos;
+      };
+    });
+  </script>
+  <script src="{% static 'js/sidebar.js' %}"></script>
+
+  <script src="{% static 'DataTables/datatables.js'%}"></script>
+
+
+</body>
+
+</html>

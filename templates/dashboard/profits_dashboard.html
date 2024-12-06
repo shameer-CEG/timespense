@@ -1,0 +1,625 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+Sales Analytics Dashboard
+{% endblock %}
+{% block body %}
+<style>
+    .chart-card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        border-radius: 8px;
+        background-color: #fff;
+        margin-bottom: 20px;
+    }
+
+    .filter-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .apexcharts-xaxis-label {
+        white-space: pre-line;
+        text-align: left;
+    }
+</style>
+
+<div class="container p-4 mb-5">
+
+    <nav style="--bs-breadcrumb-divider: '>';" class="mt-3" aria-label="breadcrumb">
+        <ol class="breadcrumb ps-4 py-3 ">
+            <li class="breadcrumb-item"><a class="active-breadcrumb" href="{% url 'overall_dashboard' %}">Dashboard</a>
+            </li>
+            {% if 'profits-chart' in request.get_full_path and shop.shop_id %}
+            <li class="breadcrumb-item" aria-current="page"><a
+                    href="{% url 'shop_profile' shop_id=shop.encoded_shop_id %}"
+                    class="active-breadcrumb">{{shop.shop_name}} Dashboard</a></li>
+            {% endif %}
+
+            <li class="breadcrumb-item" aria-current="page"><a href="#" class="current-breadcrumb disabled">Profits
+                    List</a></li>
+
+        </ol>
+    </nav>
+
+    <div class="container  breadcrumb">
+        <h2 class="fw-bold text-start m-3 "> {{ shop.shop_name|default:'Over All' }} Profits Analytics Dashboard</h2>
+
+        <!-- Filter Section -->
+        <div class="filter-section my-4 p-3 mx-auto ">
+            <div class="row g-3 justify-content-center align-items-center">
+                <div class="col-md-2 text-center">
+                    <label class="form-label fw-bold">Shop:</label>
+                    <select id="shop-select" class="form-select shadow-sm">
+                        {% if not shop.shop_id %}
+                        <option value="">All Shops</option>
+                        {% endif %}
+
+                        {% for shop in shops %}
+                        <option value="{{ shop.shop_id }}">{{ shop.shop_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1 text-center">
+                    <label class="form-label fw-bold">Year:</label>
+                    <input type="text" id="year-input" class="form-control shadow-sm" placeholder="e.g., 2024" />
+                </div>
+                <div class="col-md-1 text-center">
+                    <label class="form-label fw-bold">Month:</label>
+                    <input type="text" id="month-input" class="form-control shadow-sm" placeholder="1-12" />
+                </div>
+                <div class="col-md-2 text-center">
+                    <label class="form-label fw-bold">Start Date:</label>
+                    <input type="date" id="start-date" class="form-control shadow-sm">
+                </div>
+                <div class="col-md-2 text-center">
+                    <label class="form-label fw-bold">End Date:</label>
+                    <input type="date" id="end-date" class="form-control shadow-sm">
+                </div>
+
+                {% if not shop.shop_id %}
+                <div class="col-md-2 text-center align-self-end">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input shadow-sm" type="checkbox" id="separate-by-shop-checkbox">
+                        <label class="form-check-label" for="separate-by-shop-checkbox">Separate by Shop</label>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="chart-card" id="lineChart1">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5 class="fw-bold">Gross and Net Profit Over Time</h5>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" id="selectLineChart">
+                            <option value="gross">Gross</option>
+                            <option value="net">Net</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="btn-group btn-group-sm" role="group" id="range-selector">
+                    <button class="btn  btn-light" id="range-line-1d">1d</button>
+                    <button class="btn  btn-light" id="range-line-1w">1w</button>
+                    <button class="btn  btn-light" id="range-line-1m">1m</button>
+                    <button class="btn  btn-light" id="range-line-6m">6m</button>
+                    <button class="btn  btn-light" id="range-line-1y">1y</button>
+                    <button class="btn  btn-light" id="range-line-ytd">YTD</button>
+                    <button class="btn  btn-light" id="reset-line-range">reset</button>
+                </div>
+                <br>
+                <div id="profitTrendChartGross" class="profits-chart" style="width: 100%; height: 320px;"></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-card" id="barChart">
+                <h5 class="fw-bold">Monthly Income vs. Expenses</h5>
+                <div id="profitBarChart" class="profits-chart" style="width: 100%; height: 320px;"></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-card" id="waterfallChart">
+                <h5 class="fw-bold">Revenue and Expense Breakdown </h5>
+                <div id="profitWaterfallChart" class="profits-chart" style="width: 100%; height: 320px;"></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="chart-card" id="areaChart">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5 class="fw-bold">Profit vs. Loss Over Time</h5>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" id="selectChart">
+                            <option value="profit">Profit</option>
+                            <option value="loss">Loss</option>
+                        </select>
+                    </div>
+                </div>
+                <br>
+                <br>
+                <div id="profitAreaChart" class="profits-chart" style="width: 100%; height: 320px;"></div>
+            </div>
+        </div>
+
+        {% include 'tables/finance/profit_list.html' %}
+
+    </div>
+</div>
+
+<!-- ApexCharts CDN -->
+<script>
+    $(document).ready(function () {
+        fetchProfitData();
+
+        // Debounce only the fetchProfitData function
+        $('#shift-select, #year-input, #month-input, #start-date, #end-date, #separate-by-shop-checkbox').on('change', debounce(fetchProfitData, 300));
+
+        function fetchProfitData() {
+            $('#loading').show();
+            $.ajax({
+                url: "{% url 'filter_profit_data' %}",
+                data: {
+                    shop_id: $('#shop-select').val(),
+                    shift_id: $('#shift-select').val(),
+                    year: $('#year-input').val(),
+                    month: $('#month-input').val(),
+                    start_date: $('#start-date').val(),
+                    end_date: $('#end-date').val(),
+                    separate_by_shop: $('#separate-by-shop-checkbox').is(':checked') ? '1' : '0'
+                },
+                success: function (data) {
+
+                    console.log(data);
+                    // Render charts
+                    if (isEmpty(data.profit_over_time)) {
+                        document.querySelectorAll('.profits-chart').forEach(function (chart) {
+                            chart.innerHTML = '<div class="no-data-message">No Data Available to plot</div>';
+                        });
+
+                    } else {
+                        if (data && data.profit_over_time) {
+
+                            $('#selectLineChart').off('change').on('change', function () {
+                                console.log("Select value changed:", $(this).val());
+                                renderProfitTrendChart(data.profit_over_time, data.separate_shops, '#profitTrendChartGross', $(this).val());
+                            });
+                            renderProfitTrendChart(data.profit_over_time, data.separate_shops, '#profitTrendChartGross', 'gross');
+                        }
+
+                        if (data && data.monthly_comparison) {
+                            renderProfitBarChart(data.monthly_comparison, data.separate_shops);
+                        }
+
+                        if (data && data.revenue_expenses) {
+                            renderProfitWaterfallChart(data.revenue_expenses, data.separate_shops);
+                        }
+
+                        if (data && data.profit_vs_loss) {
+                            $('#selectChart').off('change').on('change', function () {
+                                console.log("Select value changed:", $(this).val());
+                                renderProfitAreaChart(data.profit_vs_loss, data.separate_shops);
+                            });
+                            renderProfitAreaChart(data.profit_vs_loss, data.separate_shops);
+                        }
+                    }
+                },
+                error: function () {
+                    alert("Error fetching profit data.");
+                },
+                complete: function () {
+                    $('#loading').hide();
+                }
+            });
+        }
+
+        // Debounce function to limit the rate of function calls
+        function debounce(func, delay) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
+
+        function renderProfitTrendChart(data, separate_shops, id, name) {
+            let seriesData = [];
+
+            if (separate_shops) {
+                seriesData = Object.values(
+                    data.reduce((shops, record) => {
+                        const shopName = record.shop__shop_name;
+                        if (!shops[shopName]) shops[shopName] = { name: shopName, data: [] };
+                        shops[shopName].data.push({
+                            x: new Date(record.date).getTime(),
+                            y: parseFloat((name === 'net') ? record.net_profit : record.gross_profit || 0)
+                        });
+                        return shops;
+                    }, {})
+                );
+            } else {
+                seriesData = [{
+                    name: `Total ${name} Profit`,
+                    data: data.map(record => ({
+                        x: new Date(record.date).getTime(),
+                        y: parseFloat((name === 'net') ? record.net_profit : record.gross_profit || 0)
+                    }))
+                }];
+            }
+
+            const options = {
+                chart: {
+                    type: 'line',
+                    height: 250,
+                    zoom: { enabled: true },
+                    toolbar: {
+                        show: true,
+                    },
+                    animations: { enabled: true }
+                },
+                series: seriesData,
+                xaxis: {
+                    type: 'datetime',
+                    title: { text: 'Date', offsetY: 13 },
+                    // min: new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime(),
+                },
+                yaxis: {
+                    title: { text: `${name.charAt(0).toUpperCase() + name.slice(1)} Profit Amount` },
+                    labels: { formatter: (val) => val.toFixed(2) }
+                },
+                // markers: { size: 5 },
+                stroke: { curve: 'smooth', width: 2 },
+                tooltip: { x: { format: 'yyyy-MM-dd' } },
+                legend: getLegendOptions(), // Set dynamic legend options
+
+            };
+
+            if (window[id] instanceof ApexCharts) {
+                window[id].destroy();
+            }
+            window[id] = new ApexCharts(document.querySelector(id), options);
+            window[id].render();
+
+            // Store the original date range to reset later
+            const originalRange = {
+                min: new Date(new Date().getFullYear(), 0, 1).getTime(),  // Start from January 1 of the current year
+                max: null
+            };
+
+            // Function to apply date range
+            function applyRange(days) {
+                const now = new Date().getTime();
+                const startDate = new Date(now - days * 24 * 60 * 60 * 1000).getTime();
+                window[id].updateOptions({
+                    xaxis: {
+                        min: startDate,
+                        max: now
+                    }
+                });
+            }
+
+            // Function to reset to original date range
+            function resetRange() {
+                window[id].updateOptions({
+                    xaxis: {
+                        min: originalRange.min,
+                        max: originalRange.max
+                    }
+                });
+            }
+
+            // Store initial date range for resetting
+            window[id].w.globals.seriesX[0].forEach((point) => {
+                if (!originalRange.max || point > originalRange.max) originalRange.max = point;
+            });
+
+            // Event listeners for range buttons
+            document.querySelector("#range-line-1d").addEventListener("click", () => applyRange(1));
+            document.querySelector("#range-line-1w").addEventListener("click", () => applyRange(7));
+            document.querySelector("#range-line-1m").addEventListener("click", () => applyRange(30));
+            document.querySelector("#range-line-6m").addEventListener("click", () => applyRange(182));
+            document.querySelector("#range-line-1y").addEventListener("click", () => applyRange(365));
+            document.querySelector("#range-line-ytd").addEventListener("click", () => {
+                const now = new Date();
+                const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+                applyRange((now - startOfYear) / (1000 * 60 * 60 * 24));
+            });
+
+            // Reset button event listener
+            document.querySelector("#reset-line-range").addEventListener("click", resetRange);
+        }
+
+        function renderProfitBarChart(data, separate_shops) {
+            if (window.profitBarChart instanceof ApexCharts) {
+                window.profitBarChart.destroy();
+            }
+
+            console.log(data);
+
+            let totalIncomeSum, totalExpensesSum;
+
+            if (separate_shops) {
+                // Calculate separate totalIncomeSum and totalExpensesSum for each shop
+                totalIncomeSum = data.reduce((acc, item) => {
+                    const shopName = item.shop__shop_name;
+                    acc[shopName] = (acc[shopName] || 0) + parseFloat(item.total_income || 0).toFixed(2);
+                    return acc;
+                }, {});
+
+                totalExpensesSum = data.reduce((acc, item) => {
+                    const shopName = item.shop__shop_name;
+                    acc[shopName] = (acc[shopName] || 0) + parseFloat(item.total_expenses || 0).toFixed(2);
+                    return acc;
+                }, {});
+            } else {
+                // Calculate overall totalIncomeSum and totalExpensesSum
+                totalIncomeSum = data.reduce((sum, item) => sum + parseFloat(item.total_income || 0).toFixed(2), 0);
+                totalExpensesSum = data.reduce((sum, item) => sum + parseFloat(item.total_expenses || 0).toFixed(2), 0);
+            }
+
+            console.log('Total Income:', totalIncomeSum);
+            console.log('Total Expenses:', totalExpensesSum);
+
+            const options = {
+                series: separate_shops
+                    ? [
+                        {
+                            name: "Total Income",
+                            data: Object.values(totalIncomeSum) // Data for each shop's total income 
+                        },
+                        {
+                            name: "Total Expenses",
+                            data: Object.values(totalExpensesSum) // Data for each shop's total expenses 
+                        }
+                    ]
+                    : [
+                        {
+                            name: "Total Income",
+                            data: [totalIncomeSum] // Overall total income as a single value 
+                        },
+                        {
+                            name: "Total Expenses",
+                            data: [totalExpensesSum] // Overall total expenses as a single value 
+                        }
+                    ],
+                chart: {
+                    type: 'bar',
+                    height: 300
+                },
+                xaxis: {
+                    categories: separate_shops
+                        ? Object.keys(totalIncomeSum) // Shop names for separate totals
+                        : ['Overall'], // Single "Overall" category for combined totals
+                    title: { text: separate_shops ? 'Shops' : 'Summary' } // Adjust x-axis title
+                },
+                dataLabels: {
+                    enabled: false, // Disable data labels on the bars
+                },
+                legend: {
+                    show: true // Show legend for Total Income and Total Expenses
+                }
+            };
+
+
+            window.profitBarChart = new ApexCharts(document.querySelector("#profitBarChart"), options);
+            window.profitBarChart.render();
+        }
+
+        function renderProfitWaterfallChart(data, separate_shops) {
+            if (window.profitWaterfallChart instanceof ApexCharts) {
+                window.profitWaterfallChart.destroy();
+            }
+
+            console.log(data);
+
+            let totalIncomeData = [];
+            let totalExpensesData = [];
+            let cogsData = [];
+            let operatingExpensesData = [];
+
+            if (separate_shops && Array.isArray(data)) {
+                data.forEach(shopData => {
+                    const shopName = shopData.shop__shop_name;
+                    const totalIncome = shopData.total_income !== undefined ? parseFloat(shopData.total_income) : 0;
+                    const totalExpenses = shopData.total_expenses !== undefined ? parseFloat(shopData.total_expenses) : 0;
+                    const cogs = shopData.cost_of_goods_sold !== undefined ? parseFloat(shopData.cost_of_goods_sold) : 0;
+                    const operatingExpenses = shopData.operating_expenses !== undefined ? parseFloat(shopData.operating_expenses) : 0;
+
+                    totalIncomeData.push({ x: shopName, y: totalIncome, shop: shopName });
+                    totalExpensesData.push({ x: shopName, y: -totalExpenses, shop: shopName });
+                    cogsData.push({ x: shopName, y: -cogs, shop: shopName });
+                    operatingExpensesData.push({ x: shopName, y: -operatingExpenses, shop: shopName });
+                });
+            } else if (!separate_shops && typeof data === 'object') {
+                totalIncomeData.push({ x: "Total Income", y: data.total_income ? parseFloat(data.total_income) : 0 });
+                totalExpensesData.push({ x: "Total Expenses", y: data.total_expenses ? -parseFloat(data.total_expenses) : 0 });
+                cogsData.push({ x: "COGS", y: data.cost_of_goods_sold ? -parseFloat(data.cost_of_goods_sold) : 0 });
+                operatingExpensesData.push({ x: "Operating Expenses", y: data.operating_expenses ? -parseFloat(data.operating_expenses) : 0 });
+            }
+
+            const options = {
+                series: [
+                    { name: "Total Income", data: totalIncomeData },
+                    { name: "Total Expenses", data: totalExpensesData },
+                    { name: "COGS", data: cogsData },
+                    { name: "Operating Expenses", data: operatingExpensesData }
+                ],
+                chart: { type: 'bar', height: 300, stacked: true, toolbar: { show: true } },
+                plotOptions: {
+                    bar: {
+                        horizontal: true,
+                        barHeight: '70%',
+                        distributed: false // Uniform colors for each category across shops
+                    }
+                },
+                tooltip: {
+                    custom: function ({ series, seriesIndex, dataPointIndex, w }) {
+                        const point = w.config.series[seriesIndex].data[dataPointIndex];
+                        const value = point.y;
+                        const shopName = point.shop ? point.shop : "Overall";
+
+                        return `
+            <div style="
+                background-color: #f0f0f0; 
+                border: 1px solid #d3d3d3; 
+                padding: 10px; 
+                border-radius: 4px; 
+                font-family: Arial, sans-serif; 
+                font-size: 12px;
+                box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+            ">
+                <div style="
+                    font-size: 13px; 
+                    color: #333; 
+                    margin-bottom: 4px;
+                    font-weight: bold;
+                ">${shopName}</div>
+                <div style="
+                    display: flex; 
+                    align-items: center;
+                ">
+                    <span style="
+                        width: 10px; 
+                        height: 10px; 
+                        background-color: ${w.globals.colors[seriesIndex]}; 
+                        border-radius: 50%; 
+                        margin-right: 8px;
+                    "></span>
+                    <span style="
+                        font-weight: normal; 
+                        color: #555;
+                    ">
+                        ${w.config.series[seriesIndex].name}:
+                    </span>
+                    <span style="
+                        font-weight: bold; 
+                        font-size: 12px; 
+                        color: #333; 
+                        margin-left: 5px;
+                    ">
+                        ${Math.abs(value).toFixed(2)}
+                    </span>
+                </div>
+            </div>
+        `;
+                    }
+                }
+                ,
+
+                xaxis: {
+                    title: { text: 'Profit Categories' }
+                },
+
+                legend: {
+                    show: true,
+                    position: 'bottom',
+                    horizontalAlign: 'center',
+                    markers: { radius: 5 },
+                    itemMargin: { horizontal: 10, vertical: 5 }
+                }
+
+            };
+
+            window.profitWaterfallChart = new ApexCharts(document.querySelector("#profitWaterfallChart"), options);
+            window.profitWaterfallChart.render();
+        }
+
+
+        function renderProfitAreaChart(data, separate_shops = false) {
+            // Destroy existing chart if it exists
+            if (window.profitAreaChart instanceof ApexCharts) {
+                window.profitAreaChart.destroy();
+            }
+
+            const selectValue = $('#selectChart').val();
+
+            // Helper function to format and filter data for the chart
+            let categories = [];
+            let seriesData = [];
+
+            if (separate_shops) {
+                const shopDataMap = {};
+
+                data.forEach(item => {
+                    const shopName = item.shop__shop_name;
+                    const profitValue = parseFloat(item.profit) || 0;
+                    const lossValue = parseFloat(item.loss) || 0;
+                    const value = selectValue === 'profit' ? profitValue : -lossValue;
+
+                    if (!shopDataMap[shopName]) {
+                        shopDataMap[shopName] = [];
+                    }
+                    shopDataMap[shopName].push(value);
+
+                    if (!categories.includes(item.date)) {
+                        categories.push(item.date);
+                    }
+                });
+
+                for (const [shopName, values] of Object.entries(shopDataMap)) {
+                    seriesData.push({
+                        name: shopName,
+                        data: values,
+                    });
+                }
+            } else {
+                const totalValues = data.map(item => {
+                    const profitValue = parseFloat(item.profit) || 0;
+                    const lossValue = parseFloat(item.loss) || 0;
+                    return selectValue === 'profit' ? profitValue : -lossValue;
+                });
+
+                seriesData = [{ name: selectValue === 'profit' ? "Total Profit" : "Total Loss", data: totalValues }];
+                categories = data.map(item => item.date);
+            }
+
+
+            const options = {
+                series: seriesData,
+                dataLabels: { enabled: false },
+                chart: { type: 'area', height: 250, zoom: { enabled: true } },
+                xaxis: {
+                    categories: categories,
+                    labels: { rotate: -45 },
+                },
+                tooltip: {
+                    shared: true,
+                    intersect: false,
+                    y: {
+                        formatter: val => val < 0 ? `-₹${Math.abs(val).toFixed(2)}` : `₹${val.toFixed(2)}`
+                    }
+                },
+                legend: {
+                    show: true,
+                    position: 'bottom',
+                    horizontalAlign: 'center',
+                    markers: { radius: 5 },
+                    itemMargin: { horizontal: 10, vertical: 5 }
+                },
+                fill: { opacity: 0.7 }
+            };
+
+            window.profitAreaChart = new ApexCharts(document.querySelector("#profitAreaChart"), options);
+            window.profitAreaChart.render();
+
+        }
+
+
+
+        window.addEventListener('scroll', function () {
+            // Your scroll handling code here...
+        }, { passive: true });
+
+    });
+
+</script>
+
+{% endblock %}

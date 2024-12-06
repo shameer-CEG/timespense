@@ -1,0 +1,441 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+Expense Analytics Dashboard
+{% endblock %}
+{% block body %}
+
+<!-- Filters Section -->
+<div class="container p-4 mb-5">
+    <nav style="--bs-breadcrumb-divider: '>';" class="mt-3" aria-label="breadcrumb">
+        <ol class="breadcrumb ps-4 py-3 ">
+            <li class="breadcrumb-item"><a class="active-breadcrumb" href="{% url 'overall_dashboard' %}">Dashboard</a>
+            </li>
+
+            {% if 'expenses-chart' in request.get_full_path and shop.shop_id %}
+            <li class="breadcrumb-item" aria-current="page"><a
+                    href="{% url 'shop_profile' shop_id=shop.encoded_shop_id %}"
+                    class="active-breadcrumb">{{shop.shop_name}} Dashboard</a></li>
+            {% endif %}
+
+            <li class="breadcrumb-item" aria-current="page"><a href="#" class="current-breadcrumb disabled">Expenses
+                    List</a></li>
+
+        </ol>
+    </nav>
+
+    <div class="container breadcrumb">
+
+        <h2 class="fw-bold text-start m-3 "> {{ shop.shop_name|default:'Over All' }} Expenses Analytics Dashboard</h2>
+        <div class="filter-section my-4 p-3 mx-auto">
+            <div class="row g-3 justify-content-center align-items-center">
+                <div class="col-md-2 text-center">
+                    <label class="form-label fw-bold">Shop:</label>
+                    <select id="shop-select" class="form-select shadow-sm">
+                        {% if not shop.shop_id %}
+                        <option value="">All Shops</option>
+                        {% endif %}
+
+                        {% for shop in shops %}
+                        <option value="{{ shop.shop_id }}">{{ shop.shop_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 text-center">
+                    <label class="form-label fw-bold">Expense Type:</label>
+                    <select id="expense-type-select" class="form-select shadow-sm">
+                        <option value="">All Expense Types</option>
+                    </select>
+                </div>
+                <div class="col-md-1 text-center">
+                    <label class="form-label fw-bold">Year:</label>
+                    <input type="text" id="year-input" class="form-control shadow-sm" placeholder="e.g., 2024" />
+                </div>
+                <div class="col-md-1 text-center">
+                    <label class="form-label fw-bold">Month:</label>
+                    <input type="text" id="month-input" class="form-control shadow-sm" placeholder="1-12" />
+                </div>
+                <div class="col-md-2 text-center">
+                    <label class="form-label fw-bold">Start Date:</label>
+                    <input type="date" id="start-date" class="form-control shadow-sm">
+                </div>
+                <div class="col-md-2 text-center">
+                    <label class="form-label fw-bold">End Date:</label>
+                    <input type="date" id="end-date" class="form-control shadow-sm">
+                </div>
+
+                {% if not shop.shop_id %}
+                <div class="col-md-2 text-center align-self-end">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input shadow-sm" type="checkbox" id="separate-by-shop-checkbox">
+                        <label class="form-check-label" for="separate-by-shop-checkbox">Separate by Shop</label>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- Loading Animation -->
+    <div id="loading" class="loading d-none">
+        <p>Loading...</p>
+    </div>
+
+
+    <!-- Charts Section -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="chart-card " id="lineChart1">
+                <h5 class="fw-bold mb-3">Expense Trends Over Time</h5>
+                <div class="btn-group btn-group-sm" role="group" id="range-selector">
+                    <button class="btn  btn-light" id="range-1d">1d</button>
+                    <button class="btn  btn-light" id="range-1w">1w</button>
+                    <button class="btn  btn-light" id="range-1m">1m</button>
+                    <button class="btn  btn-light" id="range-6m">6m</button>
+                    <button class="btn  btn-light" id="range-1y">1y</button>
+                    <button class="btn  btn-light" id="range-ytd">YTD</button>
+                    <button class="btn  btn-light" id="reset-range">reset</button>
+                </div>
+                <br>
+                <div id="expenseTrendChart" class="expenses-chart" style="width: 100%; height: 320px;"></div>
+            </div>
+        </div>
+
+
+        <div class="col-lg-6">
+            <div class="chart-card" id="barChart">
+                <h5 class="fw-bold mb-3">Expense Breakdown by Category</h5>
+                <div id="expenseCategoryDonut" class="expenses-chart" style="width: 100%; height: 320px;"></div>
+            </div>
+        </div>
+
+
+        <div class="col-lg-6">
+            <div class="chart-card mb-3" id="barChart">
+                <h5 class="fw-bold">Expense Comparison Across Types</h5>
+
+                <div id="expenseStackedBarChart" class="expenses-chart" style="width: 100%; height: 320px;"></div>
+            </div>
+        </div>
+
+        {% include 'tables/finance/expense_list.html' %}
+
+    </div>
+</div>
+
+
+<script>
+    $(document).ready(function () {
+        fetchExpenseData();
+
+        function fetchExpenseTypes(shopId) {
+            $.ajax({
+                url: "{% url 'ajax_get_expenseType' %}",
+                data: { shop_id: shopId },
+                success: function (data) {
+                    $('#expense-type-select').empty().append('<option value="">All Expense Types</option>');
+                    data.ExpenseTypes.forEach(function (expenseType) {
+                        $('#expense-type-select').append(`<option value="${expenseType.expense_type_id}">${expenseType.name}</option>`);
+                    });
+                }
+            });
+        }
+
+        // Initial call when the page loads
+        fetchExpenseTypes($('#shop-select').val());
+
+        // Fetch expense types when the shop is changed
+        $('#shop-select').change(function () {
+            fetchExpenseTypes($(this).val());
+            fetchExpenseData();
+        });
+
+        // Attach the change event to elements that will trigger the fetchExpenseData function
+        $('#expense-type-select, #year-input, #month-input, #start-date, #end-date, #separate-by-shop-checkbox').change(fetchExpenseData);
+
+        function fetchExpenseData() {
+            $('#loading').show(); // Show loading animation
+            $.ajax({
+                url: "{% url 'filter_expenses_data' %}",
+                data: {
+                    shop_id: $('#shop-select').val(),
+                    type_id: $('#expense-type-select').val(),
+                    year: $('#year-input').val(),
+                    month: $('#month-input').val(),
+                    start_date: $('#start-date').val(),
+                    end_date: $('#end-date').val(),
+                    separate_by_shop: $('#separate-by-shop-checkbox').is(':checked') ? '1' : '0'
+                },
+                success: function (data) {
+                    if (isEmpty(data.data)) {
+                        document.querySelectorAll('.expenses-chart').forEach(function (chart) {
+                            chart.innerHTML = '<div class="no-data-message">No Data Available to plot</div>';
+                        });
+
+                    } else {
+                        if (data) {
+                            renderExpenseTrendChart(data);
+                        }
+                        if (data.type_names && data.amounts_by_type) {
+                            renderExpenseCategoryDonut(data.type_names, data.amounts_by_type);
+                        }
+                        if (data.expenses_by_shop) {
+                            renderExpenseColumnChart(data.expenses_by_shop);
+                            $('#loading').hide(); // Hide loading animation
+                        }
+                    }
+                },
+                error: function () {
+                    $('#loading').hide();
+                    alert("Error fetching expense data.");
+                }
+            });
+        }
+
+        function renderExpenseTrendChart(data) {
+            // Destroy existing chart instance if it exists
+            if (window.expenseTrendChart instanceof ApexCharts) {
+                window.expenseTrendChart.destroy();
+            }
+
+            const seriesData = [];
+            const colors = ['#FF6347', '#4682B4', '#32CD32', '#FFD700', '#8A2BE2'];
+            let colorIndex = 0;
+
+            // If separate_shops is enabled, create a series for each shop
+            if (data.separate_shops) {
+                for (const [shopName, shopData] of Object.entries(data.data)) {
+                    // Check for necessary properties
+                    if (shopData?.date && shopData?.expenses) {
+                        // Ensure dates and expenses arrays have the same length
+                        if (shopData.date.length === shopData.expenses.length) {
+                            seriesData.push({
+                                name: shopName,
+                                data: shopData.date.map((date, index) => ({
+                                    x: new Date(date).getTime(),
+                                    y: shopData.expenses[index] || 0  // Fallback to 0 if expense is missing
+                                }))
+                            });
+                            colorIndex++;
+                        } else {
+                            console.warn(`Mismatched lengths for ${shopName}: dates (${shopData.date.length}) and expenses (${shopData.expenses.length})`);
+                        }
+                    } else {
+                        console.warn(`Missing date or expenses for shop: ${shopName}`);
+                    }
+                }
+            } else {
+                // Combined series for all shops
+                if (data.dates && data.total_amounts) {
+                    // Check for matching lengths
+                    if (data.dates.length === data.total_amounts.length) {
+                        seriesData.push({
+                            name: "Total Expenses",
+                            data: data.dates.map((date, index) => ({
+                                x: new Date(date).getTime(),
+                                y: data.total_amounts[index] || 0  // Fallback to 0 if total amount is missing
+                            }))
+                        });
+                    } else {
+                        console.warn(`Mismatched lengths for combined data: dates (${data.dates.length}) and total amounts (${data.total_amounts.length})`);
+                    }
+                } else {
+                    console.warn(`Missing dates or total amounts in combined data`);
+                }
+            }
+
+            // Set up chart options
+            const options = {
+                chart: {
+                    type: 'line',
+                    height: 380,
+                    zoom: { enabled: true },
+                    toolbar: { show: true },
+                    animations: { enabled: true }
+                },
+                series: seriesData,
+                colors: colors.slice(0, seriesData.length),
+                xaxis: {
+                    type: 'datetime',
+                    title: { text: 'Date', offsetY: 13 },
+                },
+                yaxis: {
+                    title: { text: 'Total Expenses' },
+                    labels: { formatter: (val) => val.toFixed(2) }
+                },
+                // markers: {
+                //     size: 5,
+                // },
+                markers: {
+                    size: 5,
+                    colors: undefined,
+                    strokeColors: '#fff',
+                    strokeWidth: 2,
+                    strokeOpacity: 0.9,
+                    strokeDashArray: 0,
+                    fillOpacity: 1,
+                    discrete: [],
+                    shape: "circle",
+                    offsetX: 0,
+                    offsetY: 0,
+                    onClick: undefined,
+                    onDblClick: undefined,
+                    showNullDataPoints: true,
+                    hover: {
+                        size: undefined,
+                        sizeOffset: 3
+                    }
+                },
+                stroke: {
+                    curve: 'smooth',
+                    width: 2
+                },
+                tooltip: {
+                    x: { format: 'yyyy-MM-dd' }
+                },
+                legend: getLegendOptions(), // Set dynamic legend options
+
+
+            };
+
+            // Initialize and render the chart
+            window.expenseTrendChart = new ApexCharts(document.querySelector("#expenseTrendChart"), options);
+            window.expenseTrendChart.render();
+
+            // Store the original date range to reset later
+            const originalRange = { min: null, max: null };
+
+            // Function to apply date range
+            function applyRange(days) {
+                const now = new Date().getTime();
+                const startDate = new Date(now - days * 24 * 60 * 60 * 1000).getTime();
+                window.expenseTrendChart.updateOptions({
+                    xaxis: {
+                        min: startDate,
+                        max: now
+                    }
+                });
+            }
+
+            // Function to reset to original date range
+            function resetRange() {
+                window.expenseTrendChart.updateOptions({
+                    xaxis: {
+                        min: originalRange.min,
+                        max: originalRange.max
+                    }
+                });
+            }
+
+            // Store initial date range for resetting
+            window.expenseTrendChart.w.globals.seriesX[0].forEach((point) => {
+                if (!originalRange.min || point < originalRange.min) originalRange.min = point;
+                if (!originalRange.max || point > originalRange.max) originalRange.max = point;
+            });
+
+            // Event listeners for range buttons
+            document.querySelector("#range-1d").addEventListener("click", () => applyRange(1));
+            document.querySelector("#range-1w").addEventListener("click", () => applyRange(7));
+            document.querySelector("#range-1m").addEventListener("click", () => applyRange(30));
+            document.querySelector("#range-6m").addEventListener("click", () => applyRange(182));
+            document.querySelector("#range-1y").addEventListener("click", () => applyRange(365));
+            document.querySelector("#range-ytd").addEventListener("click", () => {
+                const now = new Date();
+                const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+                applyRange((now - startOfYear) / (1000 * 60 * 60 * 24));
+            });
+
+            // Reset button event listener
+            document.querySelector("#reset-range").addEventListener("click", resetRange);
+        }
+
+
+        function renderExpenseCategoryDonut(categoryNames, totalExpensesByCategory) {
+            const intArray = totalExpensesByCategory.map(str => parseInt(parseFloat(str)));
+
+            // Safely destroy the existing chart if it exists
+            if (window.expenseCategoryDonut instanceof ApexCharts) {
+                window.expenseCategoryDonut.destroy();
+                window.expenseCategoryDonut = null;
+            }
+
+            const options = {
+                chart: { type: 'donut', height: 350 },
+                series: intArray,
+                labels: categoryNames,
+                legend: { show: true },
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            labels: {
+                                show: true,
+                                name: {
+                                    show: true,
+                                    fontWeight: 700,  // Increased font weight for name labels
+                                    color: undefined     // Default color for name labels
+                                },
+                                value: {
+                                    color: undefined,
+                                    fontWeight: 700   // Increased font weight for value labels
+                                },
+                                total: {
+                                    show: true,
+                                    label: 'Total',
+                                    color: undefined,
+                                    fontWeight: 700    // Increased font weight for total label
+                                }
+                            }
+                        }
+                    }
+                },
+                legend: getLegendOptions(), // Set dynamic legend options
+
+
+            };
+
+            window.expenseCategoryDonut = new ApexCharts(document.querySelector("#expenseCategoryDonut"), options);
+            window.expenseCategoryDonut.render();
+        }
+
+        function renderExpenseColumnChart(expenseDataByShop) {
+            if (window.expenseColumnChart instanceof ApexCharts) {
+                window.expenseColumnChart.destroy();
+                window.expenseColumnChart = null;
+            }
+
+            const shops = Object.keys(expenseDataByShop);
+            const categories = Array.from(new Set(shops.flatMap(shop => Object.keys(expenseDataByShop[shop]))));
+
+            const seriesData = categories.map(category => ({
+                name: category,
+                data: shops.map(shop => parseFloat(expenseDataByShop[shop][category] || 0))
+            }));
+
+            const options = {
+                chart: { type: 'bar', height: 350 },
+                dataLabels: {
+                    enabled: false
+                },
+                series: seriesData,
+                xaxis: {
+                    categories: shops, title: { text: 'Shops' }, labels: {
+                        style: {
+                            whiteSpace: 'break-word',  // Break words in labels if they overflow
+                            fontSize: '10px'
+                        }
+                    }
+                },
+                yaxis: { title: { text: 'Total Expenses' } },
+                legend: { show: true }
+
+            };
+
+            window.expenseColumnChart = new ApexCharts(document.querySelector("#expenseStackedBarChart"), options);
+            window.expenseColumnChart.render();
+        }
+    });
+</script>
+
+{% endblock %}

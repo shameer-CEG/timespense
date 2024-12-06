@@ -1,0 +1,315 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sales Dashboard</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="mt-5">Sales Dashboard</h1>
+
+        <!-- Filters Section -->
+        <div class="row my-3">
+            <div class="col-md-12 col-lg-2">
+                <label>Shop:</label>
+                <select id="shop-select" class="form-select">
+                    <option value="">All Shops</option>
+                    {% for shop in shops %}
+                    <option value="{{ shop.shop_id }}">{{ shop.shop_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-12 col-lg-2">
+                <label>Shift:</label>
+                <select id="shift-select" class="form-select">
+                    <option value="">All Shifts</option>
+                </select>
+            </div>
+            <div class="col-md-12 col-lg-1">
+                <label>Year:</label>
+                <input type="text" id="year-input" class="form-control" name="name" placeholder="e.g., 2024"
+                    pattern="[0-9]" title="Title" />
+            </div>
+            <div class="col-md-12 col-lg-1">
+                <label>Month:</label>
+                <input type="text" id="month-input" class="form-control" name="name" placeholder="1-12" pattern="[0-9]"
+                    title="Title" />
+            </div>
+            <div class="col-md-12 col-lg-2">
+                <label>Start Date:</label>
+                <input type="date" id="start-date" class="form-control">
+            </div>
+            <div class="col-md-12 col-lg-2">
+                <label>End Date:</label>
+                <input type="date" id="end-date" class="form-control">
+            </div>
+            <div class="col-md-12 col-lg-2 my-4">
+                <!-- Separate by Shop Checkbox -->
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="separate-by-shop-checkbox">
+                    <label class="form-check-label" for="separate-by-shop-checkbox">Separate by Shop</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Animation -->
+        <div id="loading" style="display: none;">
+            <p>Loading...</p>
+        </div>
+
+        <!-- Sales Charts -->
+        <div class="row">
+            <div class="col-md-6 w-100 h-100">
+                <div id="sales-line-chart" style="height: 100%; width: 100%;"></div>
+            </div>
+            <div class="col-md-6 w-100 h-100">
+                <div id="sales-bar-chart" style="height: 100%; width: 100%;"></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6  w-100 h-100">
+                <div id="sales-stacked-bar-chart" style="height: 100%; width: 100%;"></div>
+            </div>
+            <div class="col-md-6  w-100 h-100">
+                <div id="sales-donut-chart" style="height: 100%; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            // Fetch initial data
+            fetchSalesData();
+
+            // Update shifts based on selected shop
+            $('#shop-select').change(function () {
+                const shopId = $(this).val();
+                $.ajax({
+                    url: "{% url 'ajax_get_shifts' %}",
+                    data: { shop_id: shopId },
+                    success: function (data) {
+                        $('#shift-select').empty().append('<option value="">All Shifts</option>');
+                        data.shifts.forEach(function (shift) {
+                            $('#shift-select').append(`<option value="${shift.shift_id}">${shift.shift_name}</option>`);
+                        });
+                    }
+                });
+                fetchSalesData();
+            });
+
+            // Event listener for other filters including "Separate by Shop"
+            $('#shift-select, #year-input, #month-input, #start-date, #end-date, #separate-by-shop-checkbox').change(fetchSalesData);
+
+            function fetchSalesData() {
+                $('#loading').show();
+                $.ajax({
+                    url: "{% url 'filter_sales_data' %}",
+                    data: {
+                        shop_id: $('#shop-select').val(),
+                        shift_id: $('#shift-select').val(),
+                        year: $('#year-input').val(),
+                        month: $('#month-input').val(),
+                        start_date: $('#start-date').val(),
+                        end_date: $('#end-date').val(),
+                        separate_by_shop: $('#separate-by-shop-checkbox').is(':checked') ? '1' : '0'
+
+                    },
+                    success: function (data) {
+                        plotSalesChart(data);
+                        plotSalesBarChart(data.product_names, data.total_sales_by_product);
+                        plotSalesGroupedBarChart(data.total_sales_by_shift);
+                        plotSalesDonutChart(data.shops_names, data.total_sales_by_shop);
+                        $('#loading').hide();
+                    }
+                });
+            }
+
+            function plotSalesChart(data) {
+                var selectorOptions = {
+                    buttons: [
+                        {
+                            step: 'year',
+                            stepmode: 'todate',
+                            count: 1,
+                            label: 'YTD'
+                        }, {
+                            step: 'year',
+                            stepmode: 'backward',
+                            count: 1,
+                            label: '1y'
+                        }, {
+                            step: 'month',
+                            stepmode: 'todate',
+                            count: 6,
+                            label: '6m'
+                        }, {
+                            count: 7,
+                            label: '1w',
+                            step: 'day',
+                            stepmode: 'backward'
+                        },
+                        {
+                            step: 'day',
+                            stepmode: 'todate',
+                            count: 1,
+                            label: '1DT'
+                        },
+                        {
+                            count: 1,
+                            label: '1d',
+                            step: 'day',
+                            stepmode: 'backward'
+                        },
+
+                        {
+                            count: 1,
+                            label: '1h',
+                            step: 'hour',
+                            stepmode: 'backward'
+                        },
+                        {
+                            count: 30,
+                            label: '30m',
+                            step: 'minute',
+                            stepmode: 'backward'
+                        }],
+                };
+
+                const plotData = [];
+                const colors = ['#FF6347', '#4682B4', '#32CD32', '#FFD700', '#8A2BE2']; // Define a color set
+                let colorIndex = 0;
+                // Check if separate by shop is enabled
+                if (data.separate_shops) {
+                    for (const [shopName, shopData] of Object.entries(data.data)) {
+                        plotData.push({
+                            x: shopData.dates,
+                            y: shopData.sales,
+                            mode: 'lines+markers',
+                            name: shopName,
+                            line: { shape: 'spline', color: colors[colorIndex % colors.length] },
+                            marker: { size: 6 }
+                        });
+                        colorIndex++;
+                    }
+                } else {
+                    // Single line for all shops combined
+                    plotData.push({
+                        x: data.dates,
+                        y: data.total_sales,
+                        mode: 'lines+markers',
+                        name: 'Total Sales',
+                        line: { shape: 'spline', color: '#4682B4' }, // Default color
+                        marker: { size: 6 }
+                    });
+                }
+
+                const layout = {
+                    title: 'Sales Over Time',
+                    xaxis: { title: 'Date', rangeselector: selectorOptions, rangeslider: {} },
+                    yaxis: { title: 'Sales Amount' },
+                    showlegend: true,
+                    hovermode: 'x'
+                };
+
+                Plotly.newPlot('sales-line-chart', plotData, layout, { responsive: true, showArrow: true, scrollZoom: true });
+            }
+
+            function plotSalesBarChart(product_names, total_sales_by_product) {
+                const trace = {
+                    x: product_names,
+                    y: total_sales_by_product,
+                    type: 'bar',
+                    marker: { color: 'orange' }
+                };
+                const layout = {
+                    title: 'Product Sales',
+                    xaxis: { title: 'Product' },
+                    yaxis: { title: 'Total Sales' }
+                };
+                Plotly.newPlot('sales-bar-chart', [trace], layout), { responsive: true, showArrow: true, scrollZoom: true };
+            }
+
+            function plotSalesGroupedBarChart(total_sales_by_shift) {
+                const colors = ['#FF6347', '#4682B4', '#32CD32', '#FFD700', '#8A2BE2']; // Define a color set
+                const traces = {};
+
+                // Process each entry to group data by shift and shop
+                total_sales_by_shift.forEach((shiftData, index) => {
+                    const shopName = shiftData[0];
+                    const shiftName = shiftData[1];
+                    const shiftSales = parseFloat(shiftData[2]);
+
+                    // Check if this shift name has already been created as a trace
+                    if (!traces[shiftName]) {
+                        traces[shiftName] = {
+                            x: [],
+                            y: [],
+                            type: 'bar',
+                            name: shiftName,
+                            marker: { color: colors[index % colors.length] }
+                        };
+                    }
+
+                    // Append shop names and sales data to each shift trace
+                    traces[shiftName].x.push(shopName);
+                    traces[shiftName].y.push(shiftSales);
+                });
+
+                // Convert the traces object to an array for Plotly
+                const traceArray = Object.values(traces);
+
+                // Define layout with grouping enabled
+                const layout = {
+                    title: 'Sales by Shift (Grouped Bar Chart)',
+                    barmode: 'group',
+                    bargap: 0.15,
+                    bargroupgap: 0.1,
+                    xaxis: { title: 'Shop Name' },
+                    yaxis: { title: 'Total Sales' }
+                };
+
+                // Plot all traces in one call
+                Plotly.newPlot('sales-stacked-bar-chart', traceArray, layout, {
+                    responsive: true,
+                    scrollZoom: true
+                });
+            }
+
+            function plotSalesDonutChart(shifts_names, total_sales_by_shift) {
+                const trace = {
+                    labels: shifts_names,
+                    values: total_sales_by_shift,
+                    type: 'pie',
+                    hole: 0.4,  // This creates a donut chart
+                };
+                const layout = {
+                    title: 'Sales Distribution by Shift (Donut Chart)',
+                };
+                Plotly.newPlot('sales-donut-chart', [trace], layout, { responsive: true, showArrow: true, scrollZoom: true });
+            }
+        }, { passive: true });
+    </script>
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
+        integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
+        crossorigin="anonymous"></script>
+
+</body>
+
+</html>

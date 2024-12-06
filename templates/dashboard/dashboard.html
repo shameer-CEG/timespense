@@ -1,0 +1,588 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+Analytics Dashboard
+{% endblock %}
+{% block body %}
+
+<style>
+    /* Container styling */
+
+    .icon-circle {
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        margin-right: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #fff;
+    }
+
+    /* Widget and Chart styling */
+    .total-value {
+        font-size: 1.8rem;
+        margin-bottom: 0;
+    }
+
+    .chart-card {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+    }
+
+    /* Media query adjustments for responsive design */
+    @media (max-width: 768px) {
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+        }
+
+        .total-value {
+            font-size: 1.4rem;
+        }
+    }
+
+    /* Table container with subtle padding and shadow */
+    .table-container {
+        background-color: #f2f2f2;
+        /* Light gray background */
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+        /* Soft shadow */
+        margin-top: 20px;
+    }
+
+    /* Styling the table */
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    /* Header with a black shade */
+    .table thead th {
+        background-color: #000000 !important;
+        /* Solid black background */
+        color: #ffffff;
+        /* White text for contrast */
+        padding: 16px 10px;
+        text-align: center;
+        font-weight: 600;
+        border: none;
+    }
+
+    th::before,
+    th::after {
+        color: #ffffff !important;
+    }
+
+    /* Body rows with white background */
+    .table tbody tr {
+        background-color: #ffffff;
+        /* Pure white for rows */
+    }
+
+    /* Alternating row shades for subtle distinction */
+    .table tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+        /* Very light gray for even rows */
+    }
+
+    /* Styling for table cells */
+    .table th,
+    .table td {
+        padding: 12px;
+        font-size: 15px;
+        color: #333;
+        transition: background-color 0.3s ease;
+    }
+
+    th.focus,
+    td.focus {
+        outline: none !important;
+    }
+
+    /* Row hover effect */
+    .table tbody tr:hover,
+    .table tbody tr:active {
+        background-color: #e6e6e6;
+        cursor: pointer;
+    }
+</style>
+
+
+<div class="container p-4">
+
+
+    <!-- Dashboard Title -->
+    <div class="container breadcrumb">
+        <div class="row mb-2">
+            <div class="col">
+                <h4 class="fw-bold">Analytics Dashboard Overview</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards Row -->
+    <div class="row mb-3">
+        <!-- Total Shops -->
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="col-md-9">
+                        <h4 class="font-weight-bold text-dark total-value">{{ total_shops }}</h4>
+                        <p class="text-secondary">Total Shops</p>
+                    </div>
+                    <div class="col-md-3 ms-auto icon-circle bg-info">
+                        {% if total_shops > 100 %}
+                        <i class="fas fa-store"></i>
+                        {% else %}
+                        <i class="fas fa-store-alt"></i>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Products -->
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="col-md-9">
+                        <h4 class="font-weight-bold text-dark total-value">{{ total_products }}</h4>
+                        <p class="text-secondary">Total Products</p>
+                    </div>
+                    <div class="col-md-3 ms-auto icon-circle bg-success">
+                        {% if total_products > 500 %}
+                        <i class="fas fa-boxes-open"></i>
+                        {% else %}
+                        <i class="fas fa-box-open"></i>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Employees -->
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="col-md-9">
+                        <h4 class="font-weight-bold text-dark total-value">{{ total_employees }}</h4>
+                        <p class="text-secondary">Total Employees</p>
+                    </div>
+                    <div class="col-md-3 ms-auto icon-circle bg-warning">
+                        {% if total_employees > 50 %}
+                        <i class="fas fa-users"></i>
+                        {% else %}
+                        <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Sales -->
+        <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body d-flex align-items-center">
+                    <div class="col-md-9">
+                        <h4 class="font-weight-bold text-dark total-value">{{ total_sales|floatformat:2 }}</h4>
+                        <p class="text-secondary">Total Sales</p>
+                    </div>
+                    <div class="col-md-3 ms-auto icon-circle bg-danger">
+                        {% if total_sales > 10000 %}
+                        <i class="fas fa-dollar-sign"></i>
+                        {% else %}
+                        <i class="fas fa-coins"></i>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row">
+        <!-- Profit Trend Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card chart-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>Gross and Net Profit Over Time</h5>
+                    <select class="form-select w-auto" id="selectLineChart">
+                        <option value="gross">Gross</option>
+                        <option value="net">Net</option>
+                    </select>
+                </div>
+                <div id="profitTrendChartGross" class="profits-chart" style="width: 100%; height: 150px;"></div>
+            </div>
+        </div>
+
+        <!-- Total Expenses and Additional Metrics -->
+        <div class="col-lg-6">
+            <div class="row">
+                <!-- Total Gross Profit -->
+                <div class="col-md-6 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="text-secondary">Total Gross Profit</h5>
+                            <div class="d-flex align-items-center justify-content-center mt-3">
+                                <div class="icon-circle bg-primary mr-3">
+                                    {% if total_gross_profits > 5000 %}
+                                    <i class="fas fa-chart-line"></i>
+                                    {% else %}
+                                    <i class="fas fa-chart-area"></i>
+                                    {% endif %}
+                                </div>
+                                <h4 class="font-weight-bold total-value">{{ total_gross_profits }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Net Profit -->
+                <div class="col-md-6 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="text-secondary">Total Net Profit</h5>
+                            <div class="d-flex align-items-center justify-content-center mt-3">
+                                <div class="icon-circle bg-secondary mr-3">
+                                    {% if total_net_profits > 3000 %}
+                                    <i class="fas fa-chart-pie"></i>
+                                    {% else %}
+                                    <i class="fas fa-chart-bar"></i>
+                                    {% endif %}
+                                </div>
+                                <h4 class="font-weight-bold total-value">{{ total_net_profits }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Expenses and Shifts -->
+            <div class="row">
+                <!-- Total Shifts -->
+                <div class="col-md-6 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="text-secondary">Total Shifts</h5>
+                            <div class="d-flex align-items-center justify-content-center mt-3">
+                                <div class="icon-circle bg-info mr-3">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <h4 class="font-weight-bold total-value">{{ total_shifts }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Expenses -->
+                <div class="col-md-6 mb-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="text-secondary">Total Expenses</h5>
+                            <div class="d-flex align-items-center justify-content-center mt-3">
+                                <div class="icon-circle bg-danger mr-3">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <h4 class="font-weight-bold total-value">{{ total_expenses|floatformat:2 }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profit and Loss Cards -->
+    <div class="row">
+        <!-- Total Profits, Shortage, and Losses Section -->
+        <div class="col-lg-4">
+            <!-- Total Shortage Card -->
+            <div class="card mb-3 text-center">
+                <div class="card-body">
+                    <h5 class="text-secondary">Total Shortage</h5>
+                    <div class="d-flex align-items-center justify-content-center my-4">
+                        <div class="icon-circle bg-success mr-3">
+                            {% if total_shortage > 100 %}
+                            <i class="fas fa-exclamation-circle"></i>
+                            {% else %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                            {% endif %}
+                        </div>
+                        <h4 class="font-weight-bold total-value">{{ total_shortage|floatformat:1 }}</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Losses Card -->
+            <div class="card mb-3 text-center">
+                <div class="card-body">
+                    <h5 class="text-secondary">Total Losses</h5>
+                    <div class="d-flex align-items-center justify-content-center my-3">
+                        <div class="icon-circle bg-warning mr-3">
+                            {% if total_losses > 500 %}
+                            <i class="fas fa-chart-bar"></i>
+                            {% else %}
+                            <i class="fas fa-chart-pie"></i>
+                            {% endif %}
+                        </div>
+                        <h4 class="font-weight-bold total-value">{{ total_losses|floatformat:2 }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profit vs. Loss Chart -->
+        <div class="col-lg-8">
+            <div class="card chart-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>Profit vs. Loss Over Time</h5>
+                    <select class="form-select w-auto" id="selectChart">
+                        <option value="profit">Profit</option>
+                        <option value="loss">Loss</option>
+                    </select>
+                </div>
+                <div id="profitAreaChart" class="profits-chart" style="width: 100%; height: 200px;"></div>
+            </div>
+        </div>
+
+        {% include 'tables/shop/products/stock_list.html' %}
+
+    </div>
+</div>
+
+
+
+<script>
+    $(document).ready(function () {
+        fetchProfitData()
+        const select = document.getElementById('selectChart')
+
+        function fetchProfitData() {
+            $('#loading').show()
+            $.ajax({
+                url: "{% url 'filter_profit_data' %}",
+
+                success: function (data) {
+                    if (isEmpty(data.profit_over_time)) {
+                        document.querySelectorAll('.profits-chart').forEach(function (chart) {
+                            chart.innerHTML = '<div class="no-data-message">No Data Available to plot</div>';
+                        });
+
+                    } else {
+                        if (data && data.profit_over_time ) {
+                            // Render charts
+                            $('#selectLineChart')
+                                .off('change')
+                                .on('change', function () {
+                                    renderProfitTrendChart(data.profit_over_time, data.separate_shops, '#profitTrendChartGross', $(this).val())
+                                })
+                            renderProfitTrendChart(data.profit_over_time, data.separate_shops, '#profitTrendChartGross', 'gross')
+                        }
+
+                        if (data && data.profit_vs_loss) {
+                            $('#selectChart')
+                                .off('change')
+                                .on('change', function () {
+                                    renderProfitAreaChart(data.profit_vs_loss, data.separate_shops)
+                                })
+                            renderProfitAreaChart(data.profit_vs_loss, data.separate_shops)
+                        }
+                    }
+                },
+                error: function () {
+                    alert('Error fetching profit data.')
+                },
+                complete: function () {
+                    $('#loading').hide()
+                }
+            })
+        }
+
+        // Enhanced Debounce Function
+        function debounce(func, delay, immediate = false) {
+            let timeout;
+
+            return function (...args) {
+                const context = this;
+
+                const later = function () {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+
+                const callNow = immediate && !timeout;
+
+                clearTimeout(timeout);
+                timeout = setTimeout(later, delay);
+
+                if (callNow) func.apply(context, args);
+            };
+        }
+
+
+        function makePassive() {
+            const events = ['touchstart', 'touchmove', 'touchend'];
+
+            // Find the root chart container and add passive listeners
+            const chartContainer = document.querySelector('#profitTrendChartGross');
+
+            if (chartContainer) {
+                events.forEach((event) => {
+                    chartContainer.addEventListener(event, function (e) {
+                        e.preventDefault();
+                    }, { passive: true });
+                });
+            }
+        }
+
+        function renderProfitTrendChart(data, separate_shops, id, name) {
+            let seriesData = []
+
+            if (separate_shops) {
+                seriesData = Object.values(
+                    data.reduce((shops, record) => {
+                        const shopName = record.shop__shop_name
+                        if (!shops[shopName]) shops[shopName] = { name: shopName, data: [] }
+                        shops[shopName].data.push({
+                            x: new Date(record.date).getTime(),
+                            y: parseFloat(name === 'net' ? record.net_profit : record.gross_profit || 0)
+                        })
+                        return shops
+                    }, {})
+                )
+            } else {
+                seriesData = [
+                    {
+                        name: `Total ${name} Profit`,
+                        data: data.map((record) => ({
+                            x: new Date(record.date).getTime(),
+                            y: parseFloat(name === 'net' ? record.net_profit : record.gross_profit || 0)
+                        }))
+                    }
+                ]
+            }
+
+            const options = {
+                chart: {
+                    type: 'line',
+                    height: 150,
+                    toolbar: {
+                        show: true
+                    },
+                    zoom: { enabled: true },
+                    animations: { enabled: true }
+                },
+                series: seriesData,
+                xaxis: {
+                    type: 'datetime',
+                    title: { text: 'Date', offsetY: 13 }
+                    // min: new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime(),
+                },
+                yaxis: {
+                    title: { text: `${name.charAt(0).toUpperCase() + name.slice(1)} Profit Amount` },
+                    labels: { formatter: (val) => val.toFixed(2) }
+                },
+                markers: { size: 5 },
+                stroke: { curve: 'smooth', width: 2 },
+                tooltip: { x: { format: 'yyyy-MM-dd' } },
+                legend: getLegendOptions(), // Set dynamic legend options 
+            }
+
+            if (window[id] instanceof ApexCharts) {
+                window[id].destroy()
+            }
+            window[id] = new ApexCharts(document.querySelector(id), options)
+            window[id].render();   // Apply the passive event listeners after rendering
+            makePassive();
+        }
+
+        function renderProfitAreaChart(data, separate_shops = false) {
+            // Destroy existing chart if it exists
+            if (window.profitAreaChart instanceof ApexCharts) {
+                window.profitAreaChart.destroy()
+            }
+
+            const selectValue = $('#selectChart').val()
+
+            // Helper function to format and filter data for the chart
+            let categories = []
+            let seriesData = []
+
+            if (separate_shops) {
+                const shopDataMap = {}
+
+                data.forEach((item) => {
+                    const shopName = item.shop__shop_name
+                    const profitValue = parseFloat(item.profit) || 0
+                    const lossValue = parseFloat(item.loss) || 0
+                    const value = selectValue === 'profit' ? profitValue : -lossValue
+
+                    if (!shopDataMap[shopName]) {
+                        shopDataMap[shopName] = []
+                    }
+                    shopDataMap[shopName].push(value)
+
+                    if (!categories.includes(item.date)) {
+                        categories.push(item.date)
+                    }
+                })
+
+                for (const [shopName, values] of Object.entries(shopDataMap)) {
+                    seriesData.push({
+                        name: shopName,
+                        data: values
+                    })
+                }
+            } else {
+                const totalValues = data.map((item) => {
+                    const profitValue = parseFloat(item.profit) || 0
+                    const lossValue = parseFloat(item.loss) || 0
+                    return selectValue === 'profit' ? profitValue : -lossValue
+                })
+
+                seriesData = [{ name: selectValue === 'profit' ? 'Total Profit' : 'Total Loss', data: totalValues }]
+                categories = data.map((item) => item.date)
+            }
+
+            const options = {
+                series: seriesData,
+                dataLabels: { enabled: false },
+                chart: { type: 'area', height: 200, zoom: { enabled: true } },
+                xaxis: {
+                    categories: categories,
+                    type: 'datetime',
+                    title: { text: 'Date', offsetY: 15 },
+                },
+                tooltip: {
+                    shared: true,
+                    intersect: false,
+                    y: {
+                        formatter: (val) => (val < 0 ? `-₹${Math.abs(val).toFixed(2)}` : `₹${val.toFixed(2)}`)
+                    }
+                },
+                legend: {
+                    position: 'bottom',
+                    horizontalAlign: 'center',
+                    markers: { radius: 5 },
+                    itemMargin: { horizontal: 10, vertical: 5 }
+                },
+                fill: { opacity: 0.7 }
+            }
+
+            window.profitAreaChart = new ApexCharts(document.querySelector('#profitAreaChart'), options)
+            window.profitAreaChart.render();
+            // Apply the passive event listeners after rendering
+            makePassive();
+        } { passive: true };  // Passive to prevent blocking scrolling
+
+    })
+</script>
+{% endblock %}

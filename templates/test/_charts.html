@@ -1,0 +1,7 @@
+<div>
+    {% if chart_html %}
+        {{ chart_html|safe }}
+    {% else %}
+        <p>No data available to display the chart.</p>
+    {% endif %}
+</div>

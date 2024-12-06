@@ -1,0 +1,121 @@
+{% extends 'tables/table.html' %}
+
+{% block tableTitle %}
+
+<div class="row mb-4">
+  <div class="col-9">
+    <h2>{{ shop.shop_name|default:"Over All" }} Employees</h2>
+  </div>
+  {% if shop.shop_id %}
+  <div class="col-1 ms-auto me-5">
+    <button class="btn btn-primary py-1 px-3 fw-bold fs-4" data-bs-toggle="modal"
+    data-bs-target="#addEmployeeModal">+</button>
+  </div>
+  {% endif %}
+</div>
+
+{% include 'modals/add_employee.html' %}
+
+{% endblock %}
+
+{% block tableHead %}
+  <tr>
+    <th class="bg-secondary text-white">S.No</th>
+    <th class="bg-secondary text-white">Profile</th>
+    <th class="bg-secondary text-white">Name</th>
+    <th class="bg-secondary text-white">Email</th>
+    <th class="bg-secondary text-white">Employee Code</th>
+    <th class="bg-secondary text-white">Phone Number</th>
+    <th class="bg-secondary text-white">Address</th>
+    <th class="bg-secondary text-white">Role</th>
+    <th class="bg-secondary text-white">Joined Date</th>
+    <th class="bg-secondary text-white">{% if shop.shop_id %}Action {% else %} Shop Name{% endif %}</th>
+  </tr>
+{% endblock %}
+
+{% block tableBody %}
+  {% if messages %}
+    <div>
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% for employee in employees %}
+    <tr>
+      <td class="fw-bold">{{ forloop.counter }}</td>
+      <td>
+        <img src="{{ employee.employee_image.url }}" alt="Profile" class="img-thumbnail" width="100" height="100" />
+      </td>
+      <td class="fw-bold">{{ employee.name }}</td>
+      <td>{{ employee.email }}</td>
+      <td>{{ employee.employee_code }}</td>
+      <td>{{ employee.phone_number }}</td>
+      <td>{{ employee.address }}</td>
+      <td>{{ employee.role }}</td>
+      <td>{{ employee.created_at }}</td>
+
+      <td class="fw-bold">
+        {% if shop.shop_id %}
+          <a class="btn border-0 text-primary" href="{% url 'update_employee' shop_id=shop.encoded_shop_id employee_id=employee.encoded_employee_id %}">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </a>
+          <button type="button" class="btn text-danger border-0 delete-button" data-bs-toggle="modal" data-bs-target="#deleteModal" data-employee-id="{{ employee.encoded_employee_id }}" data-employee-name="{{ employee.name }}">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        {% else %}
+          {{ employee.shop.shop_name }}
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  
+{% if shop.shop_id %}
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" id="deleteForm" action="#">
+        <div class="modal-body">
+          {% csrf_token %}
+          <p>Are you sure you want to delete <span id="employeeName"></span>?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger">Delete</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // JavaScript to update modal with the correct employee data
+document.querySelectorAll('.delete-button').forEach(button => {
+  button.addEventListener('click', function() {
+      const employeeId = this.dataset.employeeId;
+      const employeeName = this.dataset.employeeName;
+
+      // Update form action dynamically with encoded employee ID
+      document.getElementById('deleteForm').action = `{% url 'delete_employee' shop_id=shop.encoded_shop_id employee_id='REPLACE_ID' %}`.replace('REPLACE_ID', employeeId);
+      document.getElementById('employeeName').innerText = employeeName;
+  });
+});
+</script>
+{% endif %}
+
+{% endblock %}
+
+
+{% block script %}
+{ extend: 'searchPanes', config: { cascadePanes: true, viewTotal: true, collapse: false,
+
+columns: [3,4,5],
+
+} }
+{% endblock %}

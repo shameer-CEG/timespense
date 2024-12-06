@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+Analytics Dashboard
+{% endblock %}
+{% block body %}
+{% load static %}
+<style>
+  /* Table container with subtle padding and shadow */
+  .table-container {
+    background-color: rgba(255, 255, 255, 0.9);
+    /* Light gray background */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    /* Soft shadow */
+    margin-top: 20px;
+  }
+
+  /* Styling the table */
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  /* Header with a black shade */
+  .table thead th {
+    background-color: #000000 !important;
+    /* Solid black background */
+    color: #ffffff;
+    /* White text for contrast */
+    padding: 16px 10px;
+    text-align: center;
+    font-weight: 600;
+    border: none;
+  }
+
+  th::before,
+  th::after {
+    color: #ffffff !important;
+  }
+
+  /* Body rows with white background */
+  .table tbody tr {
+    background-color: #ffffff;
+    /* Pure white for rows */
+  }
+
+  /* Alternating row shades for subtle distinction */
+  .table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+    /* Very light gray for even rows */
+  }
+
+  /* Styling for table cells */
+  .table th,
+  .table td {
+    padding: 12px;
+    font-size: 15px;
+    color: #333;
+    transition: background-color 0.3s ease;
+  }
+
+  th.focus,
+  td.focus {
+    outline: none !important;
+  }
+
+  /* Row hover effect */
+  .table tbody tr:hover,
+  .table tbody tr:active {
+    background-color: #e6e6e6;
+    cursor: pointer;
+  }
+
+  .page-link {
+    color: black;
+  }
+
+  .page-item.active .page-link {
+    background: #000 !important;
+    border: #000 !important;
+  }
+
+  .page-item.active:focus .page-link:focus {
+    outline: none !important;
+    border: none !important;
+  }
+
+  /* Action button styling */
+  .action-buttons a {
+    font-size: 14px;
+    padding: 6px 10px;
+    color: #333;
+    background-color: #e1e1e1;
+    border-radius: 6px;
+    margin-right: 5px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .action-buttons a:hover,
+  .action-buttons a:active {
+    background-color: #c7c7c7;
+    color: #000;
+  }
+
+  /* DataTables button customizations */
+  .dt-buttons .btn {
+    background-color: #343a40;
+    color: #ffffff;
+    border-radius: 5px;
+    padding: 8px 12px;
+    margin: 5px;
+    transition: background-color 0.3s ease;
+  }
+
+  .dt-buttons .btn:hover,
+  .btn:active {
+    background-color: #495057;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 576px) {
+
+    .dataTables_filter input,
+    .dataTables_length select {
+      width: 100% !important;
+      margin-bottom: 10px;
+    }
+  }
+</style>
+
+<div class="container mb-3">
+  
+  <nav style="--bs-breadcrumb-divider: '>';" class="mt-3" aria-label="breadcrumb">
+    <ol class="breadcrumb ps-4 py-3 ">
+      <li class="breadcrumb-item"><a class="active-breadcrumb" href="{% url 'overall_dashboard' %}">Dashboard</a></li>
+
+      {% if shop.shop_id %}
+      <li class="breadcrumb-item" aria-current="page"><a
+              href="{% url 'shop_profile' shop_id=shop.encoded_shop_id %}"
+              class="active-breadcrumb">{{shop.shop_name}} Dashboard</a></li>
+      {% endif %}
+
+      <li class="breadcrumb-item" aria-current="page"><a href="#" class="current-breadcrumb disabled" >
+        {% if 'employees' in request.get_full_path %}
+        Employees
+        {% elif 'products' in request.get_full_path  %}
+        Products
+        {% elif 'stock' in request.get_full_path  %}
+        Stock
+        {% elif 'expense-types' in request.get_full_path  %}
+        Expense Types
+        {% elif 'shifts' in request.get_full_path  %}
+        Shifts
+        {% endif %}   
+        List</a></li>
+
+      
+    </ol>
+  </nav>
+
+  <div class="mx-1 mx-md-auto col-md-12 table-container">
+    
+      {% block tableTitle %}
+
+      {% endblock %}
+    <div class="table-responsive mt-2">
+      {% block filter %}
+
+      {% endblock %}
+      <table id="baseTable" class="table table-hover w-100">
+        <thead>
+          {% block tableHead %}
+
+          {% endblock %}
+        </thead>
+        <tbody class="table-group-divider">
+          {% block tableBody %}
+
+          {% endblock %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+  var isDataTableInitialized = false;
+  var table;
+
+  $(document).ready(function () {
+    initializeDataTable();
+
+    $('#filterButton').on('click', function () {
+      var startDate = $('#startDate').val();
+      var endDate = $('#endDate').val();
+
+      filterByDate(startDate, endDate);
+    });
+
+  });
+
+
+  function initializeDataTable() {
+    if (!isDataTableInitialized) {
+      // Django blocks placed properly outside of JavaScript
+      {% block footscript %} {% endblock %}
+      // Destroy the existing DataTable if it exists
+      if ($.fn.DataTable.isDataTable('#baseTable')) {
+        $('#baseTable').DataTable().destroy();
+      }
+
+      table = $('#baseTable').DataTable({
+        dom: "<'row my-2'<'col-md-12'B>>" +
+          "<'row my-3 pt-4 pb-3'<'col-md-4'l><'col-md-8'f>>" +
+          "<'row'<'col-md-12'tr>>" +
+          "<'row pt-2 pb-5 mx-2'<'col-md-4 mt-5'i><'col-md-4 ms-5'p>>",
+        fixedHeader: true,
+        keys: true,
+        fixedHeader:false,
+        responsive: true,
+        buttons: [
+          {
+            extend: 'copy',
+            text: "<u>C</u>opy",
+            footer: true,
+            exportOptions: {
+              columns: ':not(:last-child)',  // Exclude last column
+              footer: true,  // Include footer in export
+
+              modifier: {
+                page: 'all'  // Include all pages, not just the visible page
+              }
+            }
+          },
+          {
+            extend: 'print',
+            text: "<u>P</u>rint",
+            footer: true,
+            exportOptions: {
+              columns: ':not(:last-child)',  // Exclude last column
+              footer: true,  // Include footer in export
+
+              modifier: {
+                page: 'all'  // Include all pages, not just the visible page
+              }
+            }
+          },
+          {
+            extend: 'excel',
+            text: "<u>E</u>xcel",
+            footer: true,
+            exportOptions: {
+              columns: ':not(:last-child)',  // Exclude last column
+              footer: true,  // Include footer in export
+
+              modifier: {
+                page: 'all'  // Include all pages, not just the visible page
+              }
+            }
+          },
+          {
+            extend: 'csv',
+            text: "<u>C</u>sv",
+            footer: true,
+            exportOptions: {
+              columns: ':not(:last-child)',  // Exclude last column
+              footer: true,  // Include footer in export
+
+              modifier: {
+                page: 'all'  // Include all pages, not just the visible page
+              }
+            }
+          },
+          {
+            extend: 'pdf',
+            text: "<u>P</u>DF",
+            footer: true,
+            exportOptions: {
+              columns: ':not(:last-child)',  // Exclude last column
+              footer: true,  // Include footer in export
+
+              modifier: {
+                page: 'all'  // Include all pages, not just the visible page
+              }
+            }
+          },
+          {
+            extend: 'colvis',
+            text: 'Column visibility'
+          },
+          {
+            // This is the place where your Django block will be included
+            extend: 'collection',
+            text: 'More options',
+            buttons: [
+              {
+                extend: 'copyHtml5',
+                text: "Copy HTML",
+                footer: true,
+                exportOptions: {
+                  columns: ':not(:last-child)',
+                  footer: true,  // Include footer in export
+                  modifier: {
+                    page: 'all'
+                  }
+                }
+              },
+              // You can add other options here as needed
+            ]
+          },
+          // Include your Django block here as well:
+          {% block script %}
+          {% endblock %}
+          ],
+    pageLength: 10,
+      pagingType: 'full_numbers',
+        scrollCollapse: true,
+          // Django block for footer callback here as well:
+          {% block footercall %} {% endblock %}
+        });
+
+  $('.dt-buttons button').addClass('rounded-3 ms-0 me-2 mt-2');
+  isDataTableInitialized = true;
+      }
+    }
+
+  function filterByDate(startDate, endDate) {
+    $.fn.dataTable.ext.search.pop();  // Remove previous filters
+
+    $.fn.dataTable.ext.search.push(
+      function (settings, data, dataIndex) {
+        var rowDate = new Date(data[1]);  // Adjust index for your date column
+        var start = startDate ? new Date(startDate) : null;
+        var end = endDate ? new Date(endDate) : null;
+
+        if (!start && !end) return true;  // No filter
+
+        if (start && rowDate < start) return false;  // Date is before start date
+        if (end && rowDate > end) return false;  // Date is after end date
+
+        return true;  // Row is within the date range
+      }
+    );
+
+    table.draw();  // Redraw table after filtering
+  }
+
+</script>
+{% endblock %}

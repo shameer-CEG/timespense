@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %}Employee Login{% endblock title %}
+{% block body %}
+<div class=" d-md-flex d-block mb-3 bg-light">
+    <div class="mt-4 mx-2 mx-md-auto col-md-8">
+        <div class="container-fluid p-md-5 p-4 border rounded border-2 border-mine" style="height: 500px;">
+            <div class="container">
+                <h1>Welcome, {{ user.username }}!</h1>
+                <a href="{% url 'logout' %}">Logout</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    history.replaceState(null, null, "/");
+</script>
+<script src="{% static 'js/sidebar.js' %}"></script>
+
+{% endblock body %}

@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ shop|yesno:'Update,Create' }} Shop{% endblock title %}
+
+{% block body %}
+<div class="container p-4 mb-5">
+
+        <nav style="--bs-breadcrumb-divider: '>';" class="mt-3" aria-label="breadcrumb">
+            <ol class="breadcrumb ps-4 py-3 ">
+                <li class="breadcrumb-item"><a class="active-breadcrumb" href="{% url 'overall_dashboard' %}">Dashboard</a>
+                </li>
+
+                {% if shop.shop_id %}
+                <li class="breadcrumb-item" aria-current="page"><a
+                        href="{% url 'shop_profile' shop_id=shop.encoded_shop_id %}"
+                        class="active-breadcrumb">{{shop.shop_name}} Dashboard</a></li>
+                {% endif %}
+    
+                <li class="breadcrumb-item" aria-current="page"><a href="#" class="current-breadcrumb disabled">Shop Profile
+                        </a></li>
+    
+            </ol>
+        </nav>
+
+        <div class="container-fluid p-md-5 p-4 border rounded border-2 border-mine shadow-lg bg-light">
+            {% if messages %}
+            <div>
+                {% for message in messages %}
+                <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+
+            <div class="container">
+                <h2>Shop Profile</h2>
+                <!-- <h2>{{ shop|yesno:'Update,Create' }} Shop</h2> -->
+                <form method="post" enctype="multipart/form-data"
+                    action="{% url 'update_shop' shop_id=shop.encoded_shop_id %}">
+                    {% csrf_token %}
+
+                    <div class="row mb-4">
+                        <!-- Form Column -->
+                        <div class="col-md-9">
+                            <!-- Shop Name -->
+                            <div class="form-group mb-3">
+                                {{ form.shop_name|as_crispy_field }}
+                            </div>
+
+                            <!-- Shop Address -->
+                            <div class="form-group mb-3">
+                                {{ form.shop_address|as_crispy_field }}
+                            </div>
+
+                            <!-- Phone Number -->
+                            <div class="form-group mb-3">
+                                {{ form.shop_phone_number|as_crispy_field }}
+                            </div>
+
+                            <!-- Shop Email -->
+                            <div class="form-group mb-3">
+                                {{ form.shop_email|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <!-- Image Preview Column -->
+                        <div class="col-md-3 ">
+                            <div class="form-group mb-3">
+                                <label for="id_shop_image" class="form-label fw-bold">Shop Image</label>
+                                <input type="file" id="shop_image_input" style="display:none;"
+                                    onchange="previewImage(event)" name="shop_image">
+                            </div>
+                            {% if form.instance.shop_image %}
+                            <div class="position-relative">
+                                <!-- Image Preview -->
+                                <img id="image-preview" src="{{ form.instance.shop_image.url }}" alt="Image Preview"
+                                    class="img-thumbnail shadow-sm w-100 h-100">
+                                <!-- Edit Button -->
+                                <button type="button" class="btn btn-dark btn-sm position-absolute top-0 end-0 m-1"
+                                    onclick="document.getElementById('shop_image_input').click();">
+                                    <i class="fa-solid fa-edit"></i>
+                                </button>
+                            </div>
+                            {% else %}
+                            <img id="image-preview" src="#" alt="Image Preview"
+                                class="img-fluid img-thumbnail shadow-sm">
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary px-4">Save</button>
+                </form>
+
+                <hr>
+
+                <!-- Delete Shop Button -->
+                <!-- <h3>Delete Shop</h3> -->
+                <button type="button" class="btn btn-danger delete-button" data-bs-toggle="modal"
+                    data-bs-target="#confirmDeleteModal">
+                    Delete Shop
+                </button>
+
+                <!-- Modal for OTP Verification -->
+                <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Deletion</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Are you sure you want to delete the shop <strong>{{ shop.shop_name }}</strong>?</p>
+                                <p>Click "Send OTP" to generate and receive the OTP via email.</p>
+
+                                <!-- OTP Generation -->
+                                <button id="send-otp-btn" class="btn btn-warning btn-sm mb-3">
+                                     Send OTP <i class="fa-solid fa-lock"></i>
+                                </button>
+                                <div class="alert alert-success" id="otp-feedback" style="display: none;">
+                                </div>
+                                    
+
+                                <!-- OTP Input Form -->
+                                <form method="post" action="{% url 'delete_shop' shop_id=shop.encoded_shop_id %}">
+                                    {% csrf_token %}
+                                    <div class="form-group">
+                                        <label for="otp">Enter OTP</label>
+                                        <input type="text" id="otp" name="otp" class="form-control"
+                                            placeholder="Enter OTP" required>
+                                    </div>
+                                    <div class="d-flex justify-content-end mt-3">
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                        <button type="button" class="btn btn-secondary ms-2"
+                                            data-bs-dismiss="modal">Cancel</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    document.getElementById('send-otp-btn').addEventListener('click', function () {
+                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                        const shopId = "{{ shop.encoded_shop_id }}";
+                        const otpFeedback = document.getElementById('otp-feedback');
+
+                        fetch("{% url 'delete_shop' shop_id=shop.encoded_shop_id %}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRFToken": csrfToken,
+                                "X-Requested-With": "XMLHttpRequest"  // Add this header
+                            },
+                            body: JSON.stringify({ action: "generate_otp" })  // Pass data as JSON
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log(data);
+                                
+                                otpFeedback.style.display = "block";
+                                otpFeedback.textContent = data.message;
+                                if (data.status === "success") {
+                                    otpFeedback.classList.remove("alert-danger");
+                                    otpFeedback.classList.add("alert-success");
+                                } else {
+                                    otpFeedback.classList.remove("alert-success");
+                                    otpFeedback.classList.add("alert-danger");
+                                }
+                            })
+                            .catch(error => {
+                                console.error("Error:", error);
+                                otpFeedback.style.display = "block";
+                                otpFeedback.textContent = "An error occurred. Please try again.";
+                                otpFeedback.classList.add("text-danger");
+                            });
+                    });
+                </script>
+
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function previewImage(event) {
+        const imagePreview = document.getElementById('image-preview');
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            imagePreview.style.display = 'none';
+        }
+    }
+</script>
+{% endblock body %}

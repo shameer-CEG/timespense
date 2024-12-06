@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ shift|yesno:'Update,Create' }} Shift{% endblock title %}
+
+{% block body %}
+<<div class="container p-4 mb-5">
+    <nav style="--bs-breadcrumb-divider: '>';" class="mt-3" aria-label="breadcrumb">
+        <ol class="breadcrumb ps-4 py-3 ">
+            <li class="breadcrumb-item"><a class="active-breadcrumb" href="{% url 'overall_dashboard' %}">Dashboard</a>
+            </li>
+
+            {% if shop.shop_id %}
+            <li class="breadcrumb-item" aria-current="page"><a
+                    href="{% url 'shop_profile' shop_id=shop.encoded_shop_id %}"
+                    class="active-breadcrumb">{{shop.shop_name}} Dashboard</a></li>
+
+            <li class="breadcrumb-item" aria-current="page"><a
+                    href="{% url 'shift_list' shop_id=shop.encoded_shop_id %}"
+                    class="active-breadcrumb">{{shop.shop_name}} Shifts List
+                </a></li>
+            {% endif %}
+
+            <li class="breadcrumb-item" aria-current="page"><a href="#" class="current-breadcrumb disabled">Shift
+                    {{ shift|yesno:'Update,Create' }}</a></li>
+
+        </ol>
+    </nav>
+    <div class="container-fluid p-md-5 p-4 border rounded border-2 border-mine shadow-lg bg-light">
+        <div class="container">
+            <h2>{{ shift|yesno:'Update,Create' }} Shift</h2>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% crispy form %}
+            </form>
+        </div>
+    </div>
+
+    </div>
+    </div>
+
+    <!-- Include Select2 CSS and JS <!-- Include Select2 CSS and JS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+    <style>
+        /* Styling for Select2 to match Bootstrap 5 */
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            padding: 0.375rem 0.75rem;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #0d6efd;
+            border: none;
+            color: #fff;
+            padding: 0.25rem 0.5rem;
+            margin: 2px;
+            border-radius: 0.2rem;
+        }
+
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: #000 !important;
+            color: #fff;
+        }
+
+
+
+        /* Select2 Container Styling */
+        .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 10px;
+        }
+
+        /* Draggable Items */
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            margin: 2px;
+            padding: 5px 10px;
+            background-color: #0000;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: move;
+            display: flex;
+            align-items: center;
+        }
+
+        .select2-selection__choice {
+            background: #6c757d !important;
+        }
+    </style>
+
+    <script>
+        $(document).ready(function () {
+            // Initialize Select2 with options to force dropdown to open below
+            $('#id_employees').select2({
+                placeholder: "Select and arrange employees",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: $('#id_employees').parent(),  // Ensures dropdown within container
+                closeOnSelect: false
+            }).on("select2:open", function () {
+                // Force dropdown to open below
+                $(".select2-container .select2-dropdown").css("top", "auto");
+            });
+
+            // Enable dragging and sorting in the selected employees list
+            $("#id_employees").on("select2:select select2:unselect", function () {
+                var selected = $(this).parent().find("ul.select2-selection__rendered");
+                selected.sortable({
+                    containment: 'parent'
+                });
+            });
+        });
+    </script>
+
+    {% endblock body %}

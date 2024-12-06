@@ -1,0 +1,83 @@
+{% extends 'base.html'%}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+
+<div class="container p-4 mb-5">
+
+  <nav style="--bs-breadcrumb-divider: '>';" class="mt-3 mx-1" aria-label="breadcrumb">
+    <ol class="breadcrumb ps-4 py-3 ">
+      <li class="breadcrumb-item"><a class="active-breadcrumb" href="{% url 'overall_dashboard' %}">Dashboard</a></li>
+      <li class="breadcrumb-item" aria-current="page"><a href="#" class="current-breadcrumb disabled">Shop List</a></li>
+    </ol>
+  </nav>
+
+  {% if messages %}
+  <div>
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="container breadcrumb">
+    <div class="col-9">
+      <h1>Shop List</h1>
+    </div>
+    <div class="col-1 ms-auto my-auto" style="margin-right: -40px;">
+      <button class="btn btn-primary px-3 py-2 fw-bold " data-bs-toggle="modal"
+        data-bs-target="#addShopModal"><i class="fa-solid fa-plus"></i></button>
+    </div>
+  </div>
+
+  {% include 'modals/add_shop.html' %}
+
+
+  <div class="container p-5 breadcrumb" style="background: #fff;">
+
+    <input type="text" id="search" class="form-control mb-4" placeholder="Search Shops...">
+    <div class="row" id="shop-cards">
+      {% for shop in shops %}
+      <div class="col-md-3 mb-3">
+        <div class="card" style="height: 450px;">
+          <!-- Badge Icons for Edit and Delete -->
+
+          {% if shop.shop_image %}
+
+          <a class="text-decoration-none" href="{% url 'shop_profile' shop_id=shop.encoded_shop_id %}"
+            class="btn btn-outline-info">
+
+            <img src="{{ shop.shop_image.url }}" style="height: 250px;" class="card-img-top p-1"
+              alt="{{ shop.shop_name }}">
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title ">{{ shop.shop_name }}</h5>
+              <h5 class="card-title ">{{ shop.shop_email }}</h5>
+              <h5 class="card-title ">{{ shop.shop_phone_number }}</h5>
+              <p class="card-text " style="font-size: 0.9rem;">Shop Code: {{ shop.shop_code }}</p>
+          </a>
+
+
+        </div>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+</div>
+
+<script>
+  $(document).ready(function () {
+    $('#search').on('keyup', function () {
+      var searchValue = $(this).val().toLowerCase();
+      $('#shop-cards .col-md-3').filter(function () {
+        $(this).toggle($(this).text().toLowerCase().indexOf(searchValue) > -1);
+      });
+    });
+  });
+</script>
+
+{% endblock %}

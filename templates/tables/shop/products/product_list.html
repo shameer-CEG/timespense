@@ -1,0 +1,113 @@
+{% extends 'tables/table.html' %}
+{% block tableTitle %}
+<div class="row mb-4">
+  <div class="col-9">
+    <h2>{{ shop.shop_name|default:"Over All" }} Products</h2>
+  </div>
+  {% if shop.shop_id %}
+  <div class="col-1 ms-auto me-5">
+    <button class="btn btn-primary py-1 px-3 fw-bold fs-4" data-bs-toggle="modal"
+    data-bs-target="#addProductModal">+</button>
+  </div>
+  {% endif %}
+</div>
+{% include 'modals/add_product.html' %}
+{% endblock %}
+{% block tableHead %}
+<tr>
+  <th class="text-white">S.No</th>
+  <th class="text-white">Product Image</th>
+  <th class="text-white">Name</th>
+  <th class="text-white">Product Code</th>
+  <th class="text-white">Price Per Unit</th>
+  <th class="text-white">Created Date</th>
+  <th class="bg-secondary text-white">{% if shop.shop_id %}Action{% else %}Shop Name{% endif %}</th>
+
+</tr>
+{% endblock %}
+{% block tableBody %}
+{% if messages %}
+<div>
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% for product in products %}
+<tr>
+  <td class="fw-bold">{{ forloop.counter }}</td>
+
+  <td>
+    <img src="{{ product.product_image.url }}" alt="Profile" class="img-thumbnail" width="100" height="100" />
+  </td>
+
+  <td class="fw-bold">{{ product.name }}</td>
+  <td class="fw-bold">{{ product.product_code }}</td>
+  <td class="fw-bold">{{ product.price_per_unit }} / {{ product.unit }}</td>
+  <td class="fw-bold">{{ product.created_at }}</td>
+
+  <td class="fw-bold p-0">
+    {% if shop.shop_id %}
+    <a class="btn border border-0  text-primary ms-0"
+      href="{% url 'update_product' shop_id=shop.encoded_shop_id product_id=product.encoded_product_id %}"><i
+        class="fa-solid fa-pen-to-square"></i></a>
+
+    <button type="button" class="btn text-danger border-0 delete-button" data-bs-toggle="modal"
+      data-bs-target="#deleteModal" data-product-id="{{ product.encoded_product_id }}"
+      data-product-name="{{ product.name }}">
+      <i class="fa-solid fa-trash"></i>
+    </button>
+    {% else %}
+    {{ product.shop.shop_name }}
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+
+{% if shop.shop_id %}
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" id="deleteForm" action="#">
+        <div class="modal-body">
+          {% csrf_token %}
+          <p>Are you sure you want to delete <span id="productName"></span>?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger">Delete</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // JavaScript to update modal with the correct product data
+  document.querySelectorAll('.delete-button').forEach(button => {
+    button.addEventListener('click', function () {
+      const productId = this.dataset.productId;
+      const productName = this.dataset.productName;
+
+      // Update form action dynamically with encoded product ID
+      document.getElementById('deleteForm').action = `{% url 'delete_product' shop_id=shop.encoded_shop_id product_id='REPLACE_ID' %}`.replace('REPLACE_ID', productId);
+      document.getElementById('productName').innerText = productName;
+    });
+  });
+</script>
+{% endif %}
+
+{% endblock %}
+
+{% block script %}
+{ extend: 'searchPanes', config: { cascadePanes: true, viewTotal: true, collapse: false,
+
+columns: [3,4,5],
+
+} }
+{% endblock %}

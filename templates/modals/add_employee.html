@@ -1,0 +1,78 @@
+<!-- templates/modals/add_employee.html -->
+<!-- templates/modals/add_employee.html -->
+{% load crispy_forms_tags %}
+
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" enctype="multipart/form-data" class="mb-4">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addEmployeeModalLabel">Add Shop</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {{ form|crispy }}
+
+                     <!-- Image Preview Column -->
+                     <div class="col-md-3 ">
+                        <div class="form-group mb-3">
+                            <input type="file" id="employee_image_input" style="display:none;"
+                                onchange="previewImage(event)" name="employee_image">
+                        </div>
+                        {% if form.instance.employee_image %}
+                        <div class="position-relative">
+                            <!-- Image Preview -->
+                            <img id="image-preview" src="{{ form.instance.employee_image.url }}" alt="Image Preview"
+                                class="img-thumbnail shadow-sm" style="display: block; max-width: 100%; height: auto;">
+                            <!-- Edit Button -->
+                            <button type="button" class="btn btn-dark btn-sm position-absolute top-0 end-0 m-1"
+                                onclick="document.getElementById('employee_image_input').click();">
+                                <i class="fa-solid fa-edit"></i>
+                            </button>
+                        </div>
+                        {% else %}
+                        <img id="image-preview" src="#" alt="Image Preview"
+                            class="img-fluid img-thumbnail shadow-sm" style="display: block; max-width: 100%; height: auto;">
+                            class="img-fluid img-thumbnail shadow-sm" style="display: block; max-width: 100%; height: auto;">
+                        {% endif %}
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" name="add_employee" class="btn btn-primary">Save</button>
+                </div>
+
+                {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                <div id="auto-dismiss-alert" class="mt-5 alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+                {% endfor %}
+
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        function previewImage(event) {
+            const imagePreview = document.getElementById('image-preview');
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block'; // Show the image preview
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.style.display = 'none'; // Hide the image preview if no file selected
+            }
+        }
+    </script>
+
+</div>

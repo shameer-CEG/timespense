@@ -1,0 +1,668 @@
+{% comment %} {% load static %}
+{% load crispy_forms_tags %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-step Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .stepper {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .step {
+            text-align: center;
+            flex: 1;
+        }
+
+        .step .circle {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            border-radius: 50%;
+            background: #ddd;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .active-step .circle {
+            background: #007bff;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">DeskApp</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Login</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="container my-5">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>  {% endcomment %}
+
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/core.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/icon-font.min.css' %}">
+    <script src="https://kit.fontawesome.com/b98138fd17.js" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{% static 'vendors/styles/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <title>Multi-Step Registration</title>
+    <style>
+        /* Position the progress bar behind the stepper */
+        /* Progress bar container */
+
+        /* From Uiverse.io by cssbuttons-io */
+        .btn-signup {
+            --color: dodgerblue;
+            font-family: inherit;
+            /* display: inline-block; */
+            width: 8em;
+            height: 2.6em;
+            line-height: 2.5em;
+            position: relative;
+            float: right;
+            margin-left: 3% !important;
+            cursor: pointer;
+            overflow: hidden;
+            background-color: #fff;
+            border: 2px solid var(--color);
+            transition: color 0.5s;
+            z-index: 1;
+            font-size: 17px;
+            border-radius: 6px;
+            font-weight: 500;
+            color: var(--color);
+        }
+
+        .btn-signup:before {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            background: var(--color);
+            height: 150px;
+            width: 200px;
+            border-radius: 50%;
+        }
+
+        .btn-signup:hover {
+            color: #fff;
+        }
+
+        .btn-signup-1:before {
+            top: 100%;
+            left: 100%;
+            transition: all 0.7s;
+        }
+
+        .btn-signup-2:before {
+            top: 100%;
+            /* left: 100%; */
+            right: 100%;
+            transition: all 0.7s;
+        }
+
+        .btn-signup-1:hover:before {
+            top: -30px;
+            left: -30px;
+        }
+
+        .btn-signup-2:hover:before {
+            top: -30px;
+            right: -30px;
+        }
+
+        .btn-signup:active:before {
+            background: #0c5da3;
+            transition: background 0s;
+        }
+
+        .progress-container {
+            position: relative;
+            width: 100%;
+        }
+
+        /* Progress bar */
+        .progress {
+            height: 7px;
+            position: absolute;
+            top: 20%;
+            left: 0;
+            width: 100%;
+            z-index: 1;
+            /* Behind the stepper */
+        }
+
+        /* Stepper container */
+        .stepper {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            z-index: 2;
+            /* In front of the progress bar */
+            flex-wrap: wrap;
+            /* Allow wrapping on smaller screens */
+            gap: 10px;
+            /* Spacing between steps */
+        }
+
+        /* Stepper step */
+        .step {
+            text-align: center;
+            flex: 1;
+            /* Make steps take equal space */
+            min-width: 100px;
+            /* Ensure minimum size for each step */
+        }
+
+        /* Step circle */
+        .circle {
+            width: 45px;
+            padding: 10px;
+            border-radius: 50%;
+            background-color: #ddd;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin: 0 auto;
+            /* Center the circle */
+        }
+
+        /* Active step */
+        .active-step .circle {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            background-color: #007bff;
+            transition: width 0.4s;
+        }
+
+        /* Step form */
+        .stepForm {
+            display: none;
+            /* Hide all forms initially */
+            opacity: 0;
+            /* Start with opacity 0 for fade effect */
+            transition: opacity 0.5s ease-in-out;
+            /* Smooth transition */
+        }
+
+        /* Active step form */
+        .stepForm.active {
+            display: block;
+            /* Show the active step */
+            opacity: 1;
+            /* Make the active step visible */
+        }
+
+        /* Responsive text wrapping */
+        .step {
+            word-wrap: break-word;
+            /* Ensure text wraps properly */
+            word-break: break-word;
+            /* Break words if necessary */
+            font-weight: bold;
+            font-size: 12px;
+            /* Make text bold */
+        }
+
+        /* Responsive layout for smaller screens */
+        @media (max-width: 768px) {
+            .circle {
+                width: 35px;
+                /* Smaller circle size on small screens */
+                padding: 7px;
+                font-size: 12px;
+                /* Smaller text inside the circle */
+            }
+
+            .step {
+                min-width: 20px;
+                font-size: 12px;
+                /* Adjust minimum step width for small screens */
+            }
+
+            .stepper {
+                gap: 2px;
+                /* Smaller gap between steps */
+            }
+
+            /* Progress bar */
+            .progress {
+                height: 7px;
+                position: absolute;
+                top: 12%;
+                left: 0;
+                width: 100%;
+                z-index: 1;
+                /* Behind the stepper */
+            }
+
+        }
+
+        /* Responsive layout for smaller screens */
+        @media (max-width: 1420px) {
+            .circle {
+                width: 35px;
+                /* Smaller circle size on small screens */
+                padding: 7px;
+                font-size: 12px;
+                /* Smaller text inside the circle */
+            }
+
+            .step {
+                min-width: 20px;
+                font-size: 11px;
+                /* Adjust minimum step width for small screens */
+            }
+
+            .stepper {
+                gap: 2px;
+                /* Smaller gap between steps */
+            }
+
+            /* Progress bar */
+            .progress {
+                height: 7px;
+                position: relative;
+
+                width: 100%;
+                z-index: 1;
+                /* Behind the stepper */
+            }
+
+        }
+
+        .stepForm {
+            display: none;
+            /* Hide all forms initially */
+            opacity: 0;
+            /* Start with opacity 0 for fade effect */
+            transition: opacity 0.5s ease-in-out;
+            /* Smooth transition */
+        }
+
+        .stepForm.active {
+            display: block;
+            /* Show the active step */
+            opacity: 1;
+            /* Make the active step visible */
+        }
+
+        .btn-signup.disabled {
+            background-color: #d3d3d3;
+            /* Light gray background */
+            color: #a9a9a9;
+            /* Dark gray text */
+            border-color: #d3d3d3;
+            /* Same border as background */
+            cursor: not-allowed;
+            /* Change cursor to indicate not clickable */
+            opacity: 0.65;
+            /* Slightly transparent */
+            pointer-events: none;
+            /* Prevent interaction */
+        }
+
+        .btn-signup:not(.disabled) {
+            background-color: #007bff;
+            /* Blue background for enabled */
+            color: white;
+            /* White text for enabled */
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="login-header box-shadow">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <div class="brand-logo">
+                <a href="login.html">
+                    <img src="vendors/images/deskapp-logo.svg" alt="" />
+                </a>
+            </div>
+            <div class="login-menu">
+                <ul>
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="register-page-wrap d-flex align-items-center flex-wrap justify-content-center">
+        <div class="container-fluid mt-5">
+            <div class="row align-items-center">
+                <div class="col-md-12 col-lg-1"></div>
+                <div class="col-md-12 col-lg-4">
+                    <div class="card shadow p-3 p-md-4 ">
+                        <h2>Sign Up</h2>
+
+
+                        <div id="alertBox" class="mt-3">
+                            <div class="text-danger">
+                            </div>
+                            <br>
+                        </div>
+
+                        <div class="card-header  bg-white text-center">
+                            <div class="progress-container">
+
+                                <div class="stepper mt-3">
+                                    <div class="step active-step" id="step-1">
+                                        <div class="circle">1</div><br>
+                                        <p class="mt-2">Basic Account Credentials</p>
+                                    </div>
+                                    <div class="step" id="step-2">
+                                        <div class="circle">2</div><br>
+                                        <p class="mt-2">Shop Account Informations</p>
+                                    </div>
+                                    <div class="step" id="step-3">
+                                        <div class="circle">3</div><br>
+                                        <p class="mt-2">Overview Information</p>
+                                    </div>
+                                </div>
+
+                                <div class="progress mb-3">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%;" id="progressBar">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <br>
+
+                        {% if messages %}
+                        <div class="alert alert-danger">
+                            {% for message in messages %}
+                                <p>{{ message }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <form id="regForm" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                    
+                        <!-- Step 1: Basic Account Credentials -->
+                        <div class="stepForm active" id="stepForm-1">
+                            <h4>Basic Account Credentials</h4>
+                            {{ signup_form|crispy }}
+                            <div class="alert alert-danger d-none"></div>  <!-- Alert for signup form backend errors -->
+                            <button type="button" class="btn-signup btn-signup-2 nextBtn" disabled>Next</button>
+                        </div>
+                    
+                        <!-- Step 2: Personal Information -->
+                        <div class="stepForm" id="stepForm-2">
+                            <h4>Personal Information</h4>
+                            {{ shop_form|crispy }}
+                            <div class="alert alert-danger d-none"></div>  <!-- Alert for shop form backend errors -->
+                            <button type="button" class="btn-signup btn-signup-2 nextBtn" disabled>Next</button>
+                            <button type="button" class="btn-signup btn-signup-1 prevBtn">Previous</button>
+                        </div>
+                    
+                        <!-- Step 3: Overview Information -->
+                        <div class="stepForm" id="stepForm-3">
+                            <h4>Overview Information</h4>
+                            <p>Email: <span id="emailDisplay"></span></p>
+                            <p>Username: <span id="usernameDisplay"></span></p>
+                            <p>Shop Name: <span id="shopNameDisplay"></span></p>
+                            <p>Shop Image: <img alt="" srcset="" width="500" height="500" id="logoDisplay"></p>
+                            <p>Shop Address: <span id="shopAddressDisplay"></span></p>
+                            <p>Shop Phone: <span id="shopPhoneDisplay"></span></p>
+                            <p>Shop Email: <span id="shopEmailDisplay"></span></p>
+                            <button type="submit" class="ms-5 btn-signup btn-signup-2">Submit</button>
+                            <button type="button" class="btn-signup btn-signup-1 prevBtn">Previous</button>
+                        </div>
+                    </form>
+                    
+                        
+
+
+
+                    </div>
+                    <div class="col-md-6 col-lg-7">
+                        <img src="vendors/images/register-page-img.png" alt="" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const form = document.getElementById('regForm');
+                
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault(); // Prevent default form submission
+            
+                    const formData = new FormData(form);
+                    
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Redirect or show success message
+                            window.location.href = '/success';  // or show success alert
+                        } else {
+                            // Display the errors using displayBackendErrors function
+                            displayBackendErrors(data.errors);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                });
+            
+                // Display backend errors in the appropriate form step
+                function displayBackendErrors(errors) {
+                    const formErrorsDiv = document.querySelector('.alert');
+            
+                    formErrorsDiv.innerHTML = '';  // Clear previous errors
+                    formErrorsDiv.classList.remove('d-none'); // Show error div
+            
+                    Object.entries(errors).forEach(([field, messages]) => {
+                        messages.forEach(message => {
+                            // Determine which form the field belongs to (signup_form or shop_form)
+                            const fieldInput = document.querySelector(`[name="${field}"]`);
+                            if (fieldInput) {
+                                // Find the closest step form where this input exists
+                                const parentStepForm = fieldInput.closest('.stepForm');
+                                if (parentStepForm) {
+                                    // Only show the form errors in the relevant step
+                                    const alertDiv = parentStepForm.querySelector('.alert');
+                                    alertDiv.classList.remove('d-none');
+                                    alertDiv.innerHTML += `<p>${message.message}</p>`;
+            
+                                    // Highlight invalid field
+                                    fieldInput.classList.add('is-invalid');
+                                    if (!fieldInput.nextElementSibling || !fieldInput.nextElementSibling.classList.contains('invalid-feedback')) {
+                                        fieldInput.insertAdjacentHTML('afterend', `<div class="invalid-feedback">${message.message}</div>`);
+                                    }
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+            
+        </script>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                let currentStep = 0;
+                const steps = document.querySelectorAll(".stepForm");
+                const nextBtns = document.querySelectorAll(".nextBtn");
+                const prevBtns = document.querySelectorAll(".prevBtn");
+            
+                // Show the current step
+                function showStep(stepIndex) {
+                    steps.forEach((step, index) => {
+                        step.classList.toggle("active", index === stepIndex);
+                    });
+            
+                    validateCurrentStep();
+                    updateProgress(stepIndex);
+            
+                    if (stepIndex === 2) {
+                        updateOverview(); // Update preview when reaching the Overview step
+                    }
+                }
+            
+                // Validate the current step's inputs
+                function validateCurrentStep() {
+                    const currentForm = steps[currentStep];
+                    const inputs = currentForm.querySelectorAll("input, select, textarea");
+                    let isValid = true;
+            
+                    inputs.forEach(input => {
+                        if (!input.checkValidity()) {
+                            isValid = false;
+                            input.classList.add("is-invalid");
+                        } else {
+                            input.classList.remove("is-invalid");
+                        }
+                    });
+            
+                    const nextBtn = currentForm.querySelector(".nextBtn");
+                    if (nextBtn) {
+                        nextBtn.disabled = !isValid;
+                    }
+                }
+            
+                // Function to update the Overview step with form values
+                function updateOverview() {
+                    document.getElementById("emailDisplay").innerText = document.querySelector('[name="email"]').value;
+                    document.getElementById("usernameDisplay").innerText = document.querySelector('[name="username"]').value;
+                    document.getElementById("shopNameDisplay").innerText = document.querySelector('[name="shop_name"]').value;
+                    document.getElementById("shopAddressDisplay").innerText = document.querySelector('[name="shop_address"]').value;
+                    document.getElementById("shopPhoneDisplay").innerText = document.querySelector('[name="shop_phone"]').value;
+                    document.getElementById("shopEmailDisplay").innerText = document.querySelector('[name="shop_email"]').value;
+            
+                    // Handle Shop Logo/Logo Preview
+                    const logoInput = document.querySelector('[name="logo"]');
+                    if (logoInput && logoInput.files && logoInput.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            document.getElementById('logoDisplay').setAttribute('src', e.target.result);
+                        }
+                        reader.readAsDataURL(logoInput.files[0]);
+                    }
+                }
+            
+                // Handle Next button click
+                nextBtns.forEach(btn => {
+                    btn.addEventListener("click", function () {
+                        validateCurrentStep();
+                        const currentForm = steps[currentStep];
+                        const inputs = currentForm.querySelectorAll("input, select, textarea");
+                        let allValid = true;
+            
+                        inputs.forEach(input => {
+                            if (!input.checkValidity()) {
+                                allValid = false;
+                                input.classList.add("is-invalid");
+                            }
+                        });
+            
+                        if (allValid) {
+                            currentStep++;
+                            showStep(currentStep);
+                        }
+                    });
+                });
+            
+                // Handle Previous button click
+                prevBtns.forEach(btn => {
+                    btn.addEventListener("click", function () {
+                        currentStep--;
+                        showStep(currentStep);
+                    });
+                });
+            
+                // Real-time input validation
+                document.querySelectorAll("input, select, textarea").forEach(input => {
+                    input.addEventListener("input", function () {
+                        validateCurrentStep();
+                    });
+                });
+            
+                // Progress bar (if applicable)
+                function updateProgress(stepIndex) {
+                    const progressBar = document.getElementById('progressBar');
+                    if (progressBar) {
+                        const stepCount = steps.length;
+                        const progress = ((stepIndex + 1) / stepCount) * 100;
+                        progressBar.style.width = `${progress}%`;
+                    }
+                }
+            
+                // Initialize the first step
+                showStep(currentStep);
+            });
+            
+        </script>
+
+        <script type="text/javaScript" src="{% static 'vendors/scripts/core.js'%}"></script>
+        <script type="text/javaScript" src="{% static 'vendors/scripts/script.min.js' %}"></script>
+        <script type="text/javaScript" src="{% static 'vendors/scripts/process.js'%}"></script>
+        <script type="text/javaScript" src="{% static 'vendors/scripts/layout-settings.js'%}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+            integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+            crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
+            integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
+            crossorigin="anonymous"></script>
+
+</body>
+
+</html>

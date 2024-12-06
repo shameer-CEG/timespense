@@ -1,0 +1,40 @@
+# Python-related files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.sqlite3
+
+# Environment variables
+.env
+*.env
+
+# Django-specific files
+db.sqlite3
+*.log
+*.pot
+*.py[cod]
+*.pyo
+*.pyd
+staticfiles/
+media/
+*.pid
+
+# Virtual environment
+venv/
+env/
+*.egg
+*.egg-info/
+.eggs/
+
+# VSCode-specific files
+.vscode/
+
+# PyCharm-specific files
+.idea/
+
+# MacOS-specific files
+.DS_Store
+
+# Windows-specific files
+Thumbs.db

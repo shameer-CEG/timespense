@@ -1,0 +1,200 @@
+{% extends "tables/table.html" %}
+{% block tableTitle %}
+<div class="row mb-4">
+  <div class="col-9">
+    <h2>{{ shop.shop_name|default:"Over All" }} Shift Records</h2>
+  </div>
+  {% if shop.shop_id %}
+  <div class="col-1 ms-auto me-5">
+    <button class="btn btn-primary py-1 px-3 fw-bold fs-4" data-bs-toggle="modal"
+    data-bs-target="#addShiftModal">+</button>
+  </div>
+  {% endif %}
+</div>
+
+
+<!-- Include Select2 CSS and JS <!-- Include Select2 CSS and JS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-beta.1/js/select2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+<style>
+    /* Styling for Select2 to match Bootstrap 5 */
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        padding: 0.375rem 0.75rem;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #0d6efd;
+        border: none;
+        color: #fff;
+        padding: 0.25rem 0.5rem;
+        margin: 2px;
+        border-radius: 0.2rem;
+    }
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: #000 !important;
+        color: #fff;
+    }
+
+    
+
+    /* Select2 Container Styling */
+    .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 10px;
+    }
+
+    /* Draggable Items */
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        margin: 2px;
+        padding: 5px 10px;
+        background-color: #0000;
+        color: #fff;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        cursor: move;
+        display: flex;
+        align-items: center;
+    }
+
+    .select2-selection__choice{
+        background: #6c757d !important;
+    }
+
+</style>
+
+<script>
+    $(document).ready(function() {
+        // Initialize Select2 with options to force dropdown to open below
+        $('#id_employees').select2({
+            placeholder: "Select and arrange employees",
+            allowClear: true,
+            width: '100%',
+            dropdownParent: $('#id_employees').parent(),  // Ensures dropdown within container
+            closeOnSelect: false
+        }).on("select2:open", function() {
+            // Force dropdown to open below
+            $(".select2-container .select2-dropdown").css("top", "auto");
+        });
+
+        // Enable dragging and sorting in the selected employees list
+        $("#id_employees").on("select2:select select2:unselect", function () {
+            var selected = $(this).parent().find("ul.select2-selection__rendered");
+            selected.sortable({
+                containment: 'parent'
+            });
+        });
+    });
+</script>
+{% include 'modals/add_shift.html' %}{% endblock tableTitle %}
+
+{% block tableHead %}
+<tr>
+    <th class="bg-secondary text-white">S.No</th>
+    <th class="bg-secondary text-white">Shift Name</th>
+    <th class="bg-secondary text-white">Date</th>
+    <th class="bg-secondary text-white">Start time</th>
+    <th class="bg-secondary text-white">End time</th>
+    <th class="bg-secondary text-white">Created At</th>
+    <th class="bg-secondary text-white">Employees</th>
+    <th class="bg-secondary text-white">Action</th>
+</tr>
+{% endblock tableHead %}
+{% block tableBody %}
+{% if messages %}
+<div>
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% for shift in shifts %}
+<tr>
+    <td class="fw-bold  text-break
+    ">{{ forloop.counter }}</td>
+
+    <td class="fw-bold  text-break">{{ shift.shift_name }}</td>
+    <td class="fw-bold  text-break">{{ shift.date }}</td>
+    <td class="fw-bold  text-break">{{ shift.start_time }}</td>
+
+    <td class="fw-bold  text-break">{{ shift.end_time }}</td>
+    <td class="fw-bold  text-break">{{ shift.created_at }}</td>
+    <td class="fw-bold  text-break">
+        {% for employee in shift.employees.all %}
+            {{ employee.name }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            No employees assigned
+        {% endfor %}
+    </td>
+
+    <td class="fw-bold p-0">
+        <a class="btn border border-0  text-primary ms-0" href="{% url 'update_shift' shop_id=shop.encoded_shop_id shift_id=shift.encoded_shift_id  %}">
+            <i class="fa-solid fa-pen-to-square"></i>
+        </a>
+
+        <button type="button" class="btn text-danger border-0 delete-button" data-bs-toggle="modal"
+        data-bs-target="#deleteModal" data-shift-id="{{ shift.encoded_shift_id }}"
+            data-shift-name="{{shift.date}} of {{ shift.shift_name }} ">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+
+    </td>
+</tr>
+{% endfor %}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form method="post" id="deleteForm" action="#">
+          <div class="modal-body">
+            {% csrf_token %}
+            <p>Are you sure you want to delete <span id="shiftName"></span>?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-danger">Delete</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // JavaScript to update modal with the correct shift data
+    document.querySelectorAll('.delete-button').forEach(button => {
+      button.addEventListener('click', function () {
+        const shiftId = this.dataset.shiftId;
+        const shiftName = this.dataset.shiftName;
+  
+        // Update form action dynamically with encoded shift ID
+        document.getElementById('deleteForm').action = `{% url 'delete_shift' shop_id=shop.encoded_shop_id shift_id='REPLACE_ID' %}`.replace('REPLACE_ID', shiftId);
+        document.getElementById('shiftName').innerText = shiftName;
+      });
+    });
+  </script>
+
+{% endblock tableBody %}
+
+
+{% block script %}
+{
+extend: 'searchPanes',
+config: {
+cascadePanes: true,
+viewTotal: true,
+collapse: false,
+
+columns: [3,5],
+
+}
+}
+{% endblock script %}

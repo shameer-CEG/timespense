@@ -1,0 +1,266 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sales Dashboard</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<body class="container">
+    <h1 class="mt-5">Sales Dashboard</h1>
+
+    <!-- Filters Section -->
+    <div class="row my-3">
+        <div class="col-md-2">
+            <label>Shop:</label>
+            <select id="shop-select" class="form-select">
+                <option value="">All Shops</option>
+                {% for shop in shops %}
+                <option value="{{ shop.shop_id }}">{{ shop.shop_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label>Shift:</label>
+            <select id="shift-select" class="form-select">
+                <option value="">All Shifts</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <label>Year:</label>
+            <input type="text" id="year-input" class="form-control" name="name" placeholder="e.g., 2024" pattern="[0-9]"
+                title="Title" />
+        </div>
+        <div class="col-md-1">
+            <label>Month:</label>
+            <input type="text" id="month-input" class="form-control" name="name" placeholder="1-12" pattern="[0-9]"
+                title="Title" />
+        </div>
+        <div class="col-md-2">
+            <label>Start Date:</label>
+            <input type="date" id="start-date" class="form-control">
+        </div>
+        <div class="col-md-2">
+            <label>End Date:</label>
+            <input type="date" id="end-date" class="form-control">
+        </div>
+        <div class="col-md-2 my-4">
+            <!-- Separate by Shop Checkbox -->
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="separate-by-shop-checkbox">
+                <label class="form-check-label" for="separate-by-shop-checkbox">Separate by Shop</label>
+            </div>
+        </div>
+    </div>
+
+    <button id="export-pdf">Export Charts as PDF</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.3.2/html2canvas.min.js"></script>
+
+
+    <!-- Loading Animation -->
+    <div id="loading" style="display: none;">
+        <p>Loading...</p>
+    </div>
+
+    <!-- Sales Charts -->
+    <div id="expenseTrendChart" style="width: 100%; height: 400px;"></div>
+    <div id="expenseCategoryDonut" style="width: 100%; height: 400px;"></div>
+    <div id="expenseStackedBarChart" style="width: 100%; height: 400px;"></div>
+
+
+    <script>
+        $(document).ready(function () {
+            // Fetch initial data
+            fetchExpenseData();
+
+            // Update shifts based on selected shop
+            $('#shop-select').change(function () {
+                const shopId = $(this).val();
+                $.ajax({
+                    url: "{% url 'ajax_get_shifts' %}",
+                    data: { shop_id: shopId },
+                    success: function (data) {
+                        $('#shift-select').empty().append('<option value="">All Shifts</option>');
+                        data.shifts.forEach(function (shift) {
+                            $('#shift-select').append(`<option value="${shift.shift_id}">${shift.shift_name}</option>`);
+                        });
+                    }
+                });
+                fetchExpenseData();
+            });
+
+            // Event listener for other filters including "Separate by Shop"
+            $('#shift-select, #year-input, #month-input, #start-date, #end-date, #separate-by-shop-checkbox').change(fetchExpenseData);
+
+            function fetchExpenseData() {
+                $('#loading').show();
+                $.ajax({
+                    url: "{% url 'filter_expense_data' %}",
+                    data: {
+                        shop_id: $('#shop-select').val(),
+                        type_id: $('#shift-select').val(),  // Using type_id here for expense tracking
+                        year: $('#year-input').val(),
+                        month: $('#month-input').val(),
+                        start_date: $('#start-date').val(),
+                        end_date: $('#end-date').val(),
+                        separate_by_shop: $('#separate-by-shop-checkbox').is(':checked') ? '1' : '0'
+                    },
+                    success: function (data) {
+                        renderExpenseTrendChart(data);
+                        renderExpenseCategoryDonut(data.type_names, data.amounts_by_type);
+                        renderExpenseStackedBarChart(data.expenses_by_shop);
+                        $('#loading').hide();
+                    }
+                });
+            }
+
+
+            // Line/Area Chart for Expenses Over Time
+            function renderExpenseTrendChart(data) {
+
+                const plotData = [];
+                const colors = ['#FF6347', '#4682B4', '#32CD32', '#FFD700', '#8A2BE2']; // Define a color set
+                let colorIndex = 0;
+                if (data.separate_shops) {
+                    for (const [shopName, shopData] of Object.entries(data.data)) {
+                        plotData.push({
+                            x: shopData.dates,
+                            y: shopData.expenses,
+                            mode: 'lines+markers',
+                            name: shopName,
+                            line: { shape: 'spline', color: colors[colorIndex % colors.length] },
+                            marker: { size: 6 }
+                        });
+                        colorIndex++;
+                    }
+                } else {
+                    // Single line for all shops combined
+                    plotData.push({
+                        x: data.dates,
+                        y: data.total_amounts,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        fill: 'tozeroy',
+                        line: { shape: 'spline', color: '#4682B4' }, // Default color
+                        marker: { size: 6 }
+                    });
+                }
+
+                // const data = [{
+                //     x: dates,
+                //     y: totalExpenses,
+                //     type: 'scatter',
+                //     mode: 'lines+markers',
+                //     fill: 'tozeroy',  // Area fill below the line
+                //     line: { shape: 'spline', color: '#FF5733' }  // Smooth line, custom color
+                // }];
+
+                const layout = {
+                    title: 'Expense Trends Over Time',
+                    xaxis: { title: 'Date' },
+                    yaxis: { title: 'Total Expenses' },
+                    showlegend: true,
+                    hovermode: 'x'
+                };
+
+                Plotly.newPlot('expenseTrendChart', plotData, layout, { responsive: true, showArrow: true, scrollZoom: true });
+            }
+
+            // Donut Chart for Expense Breakdown by Category
+            function renderExpenseCategoryDonut(categoryNames, totalExpensesByCategory) {
+                const data = [{
+                    labels: categoryNames,
+                    values: totalExpensesByCategory,
+                    type: 'pie',
+                    hole: 0.4,  // Donut effect
+                    textinfo: 'label+percent',
+                    marker: { colors: ['#FF9999', '#66B2FF', '#FFCC66', '#99FF99'] }
+                }];
+
+                const layout = {
+                    title: 'Expense Breakdown by Category',
+                };
+
+                Plotly.newPlot('expenseCategoryDonut', data, layout);
+            }
+
+            // Stacked Bar Chart for Expense Comparison Across Shops
+            function renderExpenseStackedBarChart(expenseDataByShop) {
+
+                // Extract unique shop names and categories
+                const shops = Object.keys(expenseDataByShop);
+                const categories = Array.from(
+                    new Set(
+                        shops.flatMap(shop => Object.keys(expenseDataByShop[shop]))
+                    )
+                );
+
+                // Prepare traces for each category across shops
+                const traces = categories.map(category => ({
+                    x: shops,
+                    y: shops.map(shop => parseFloat(expenseDataByShop[shop][category] || 0)), // Total expenses by shop/category
+                    name: category,
+                    type: 'bar'
+                }));
+
+                const layout = {
+                    title: 'Expense Comparison Across Shops',
+                    barmode: 'group',
+                    bargap: 0.15,
+                    bargroupgap: 0.1,
+                    xaxis: { title: 'Shops' },
+                    yaxis: { title: 'Total Expenses' }
+                };
+
+                Plotly.newPlot('expenseStackedBarChart', traces, layout);
+            }
+        }, { passive: true });
+
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("export-pdf").addEventListener("click", function () {
+                const { jsPDF } = window.jspdf;
+                let doc = new jsPDF();
+
+                // Capture each chart and add to PDF
+                html2canvas(document.getElementById("expenseTrendChart"), { useCORS: true }).then(canvas => {
+                    doc.addImage(canvas.toDataURL("image/png"), 'PNG', 10, 10, 180, 60);
+                    return html2canvas(document.getElementById("expenseCategoryDonut"), { useCORS: true });  // Corrected ID here
+                }).then(canvas => {
+                    doc.addImage(canvas.toDataURL("image/png"), 'PNG', 10, 80, 180, 60);
+                    return html2canvas(document.getElementById("expenseStackedBarChart"), { useCORS: true });
+                }).then(canvas => {
+                    doc.addImage(canvas.toDataURL("image/png"), 'PNG', 10, 150, 180, 60);
+                    doc.save("Expense_Charts.pdf");
+                }).catch(error => {
+                    console.error("Error generating PDF:", error);
+                });
+            });
+        });
+    </script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
+        integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
+        crossorigin="anonymous"></script>
+
+
+</body>
+
+</html>

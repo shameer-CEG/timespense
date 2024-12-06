@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+{% load static %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<style>
+    .chart-card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        border-radius: 8px;
+        background-color: #fff;
+        margin-bottom: 20px;
+    }
+
+    .filter-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .apexcharts-xaxis-label {
+        white-space: pre-line;
+        text-align: left;
+    }
+</style>
+
+<div class="container">
+    <h1 class="mt-5">Sales Dashboard</h1>
+
+    <!-- Filters Section -->
+    <div class="row justify-content-center">
+        <div class="row my-3">
+            <div class="col-md-2">
+                <label>Shop:</label>
+                <select id="shop-select" class="form-select">
+                    <option value="">All Shops</option>
+                    {% for shop in shops %}
+                    <option value="{{ shop.shop_id }}">{{ shop.shop_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label>Shift:</label>
+                <select id="shift-select" class="form-select">
+                    <option value="">All Shifts</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label>Year:</label>
+                <input type="text" id="year-input" class="form-control" placeholder="2024" />
+            </div>
+            <div class="col-md-1">
+                <label>Month:</label>
+                <input type="text" id="month-input" class="form-control" placeholder="1-12" />
+            </div>
+            <div class="col-md-2">
+                <label>Start Date:</label>
+                <input type="date" id="start-date" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label>End Date:</label>
+                <input type="date" id="end-date" class="form-control">
+            </div>
+            <div class="col-md-2 my-4">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="separate-by-shop-checkbox">
+                    <label class="form-check-label" for="separate-by-shop-checkbox">Separate by Shop</label>
+                </div>
+            </div>
+        </div>
+
+
+        <br>
+    </div>
+
+    <!-- Loading Animation -->
+    <div id="loading" style="display: none;">
+        <p>Loading...</p>
+    </div>
+
+    <!-- Sales Charts -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="chart-card" id="lineChart1">
+                <h5 class="fw-bold">Sales Over Time</h5>
+                <div class="btn-group btn-group-sm" role="group" id="range-selector">
+                    <button class="btn  btn-light" id="range-line-1d">1d</button>
+                    <button class="btn  btn-light" id="range-line-1w">1w</button>
+                    <button class="btn  btn-light" id="range-line-1m">1m</button>
+                    <button class="btn  btn-light" id="range-line-6m">6m</button>
+                    <button class="btn  btn-light" id="range-line-1y">1y</button>
+                    <button class="btn  btn-light" id="range-line-ytd">YTD</button>
+                    <button class="btn  btn-light" id="reset-line-range">reset</button>
+                </div>
+                <br>
+                <div id="sales-line-chart"></div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="chart-card" id="barChart">
+                <h5 class="fw-bold">Product Sales Over Time</h5>
+                <div id="sales-bar-chart"></div>
+            </div>
+        </div>
+
+
+        <div class="col-lg-6">
+            <div class="chart-card" id="barChart">
+                <h5 class="fw-bold">Sales Over Shift</h5>
+                <div id="sales-grouped-bar-chart"></div>
+            </div>
+        </div>
+
+
+        <div class="col-lg-6">
+            <div class="chart-card" id="barChart">
+                <h5 class="fw-bold">Sales on Each Shops</h5>
+
+                <div id="sales-donut-chart"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Fetch initial data
+        fetchSalesData();
+
+        // Update shifts based on selected shop
+        $('#shop-select').change(function () {
+            const shopId = $(this).val();
+            $.ajax({
+                url: "{% url 'ajax_get_shifts' %}",
+                data: { shop_id: shopId },
+                success: function (data) {
+                    $('#shift-select').empty().append('<option value="">All Shifts</option>');
+                    data.shifts.forEach(function (shift) {
+                        $('#shift-select').append(`<option value="${shift.shift_id}">${shift.shift_name}</option>`);
+                    });
+                }
+            });
+            fetchSalesData();
+        });
+
+        // Event listener for other filters including "Separate by Shop"
+        $('#shift-select, #year-input, #month-input, #start-date, #end-date, #separate-by-shop-checkbox').change(fetchSalesData);
+
+        function fetchSalesData() {
+            $('#loading').show();
+            $.ajax({
+                url: "{% url 'filter_sales_data' %}",
+                data: {
+                    shop_id: $('#shop-select').val(),
+                    shift_id: $('#shift-select').val(),
+                    year: $('#year-input').val(),
+                    month: $('#month-input').val(),
+                    start_date: $('#start-date').val(),
+                    end_date: $('#end-date').val(),
+                    separate_by_shop: $('#separate-by-shop-checkbox').is(':checked') ? '1' : '0'
+                },
+                success: function (data) {
+                    plotSalesChart(data);
+                    plotSalesBarChart(data.product_names, data.total_sales_by_product);
+                    plotSalesGroupedBarChart(data.total_sales_by_shift);
+                    plotSalesDonutChart(data.shops_names, data.total_sales_by_shop);
+                    $('#loading').hide();
+                }
+            });
+        }
+
+        function plotSalesChart(data) {
+            // Log the incoming data for debugging
+
+            const seriesData = [];
+            const colors = ['#FF6347', '#4682B4', '#32CD32', '#FFD700', '#8A2BE2']; // Color set for different shops
+            let colorIndex = 0;
+
+            // Check if separate by shop is enabled
+            if (data.separate_shops) {
+                // Iterate over shops and create individual series for each shop
+                for (const [shopName, shopData] of Object.entries(data.data)) {
+                    seriesData.push({
+                        name: shopName,
+                        data: shopData.sales.map((sales, index) => ({
+                            x: new Date(shopData.date[index]).getTime(), // Convert dates to timestamps
+                            y: sales
+                        }))
+                    });
+                    colorIndex++;
+                }
+            } else {
+                // If not separating by shop, plot total sales
+                seriesData.push({
+                    name: 'Total Sales',
+                    data: data.dates.map((date, index) => ({
+                        x: new Date(date).getTime(), // Convert dates to timestamps
+                        y: data.total_sales[index]
+                    }))
+                });
+            }
+
+            // Chart options configuration
+            const options = {
+                chart: {
+                    type: 'line',
+                    height: 350,
+                    zoom: { enabled: true },
+                    toolbar: { show: true },
+                    animations: { enabled: true }
+                },
+                series: seriesData,
+                xaxis: {
+                    type: 'datetime',
+                    title: { text: 'Date' },
+                    labels: {
+                        formatter: function (value) {
+                            // Convert the timestamp back to a Date object
+                            const date = new Date(value);
+                            // Format the date as needed (e.g., 'MM/dd/yyyy', 'dd MMM yyyy', etc.)
+                            return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+                        }
+                    }
+                },
+                yaxis: {
+                    title: { text: 'Sales Amount' },
+                    labels: {
+                        formatter: (val) => val.toFixed(2) // Format y-axis labels to 2 decimal places
+                    }
+                },
+                markers: { size: 5 },
+                stroke: { curve: 'smooth', width: 2 },
+                tooltip: { x: { format: 'yyyy-MM-dd' } },
+                legend: {
+                    position: 'bottom',
+                    horizontalAlign: 'center',
+                    offsetY: 10,
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    labels: { colors: ['#333'] }
+                }
+            };
+
+            // Initialize and render the chart
+            const chartContainerId = '#sales-line-chart'; // Ensure this matches your HTML element
+            if (window[chartContainerId] instanceof ApexCharts) {
+                window[chartContainerId].destroy(); // Destroy the previous chart if it exists
+            }
+            window[chartContainerId] = new ApexCharts(document.querySelector(chartContainerId), options);
+            window[chartContainerId].render();
+
+            // Store the original date range to reset later
+            const originalRange = {
+                min: new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime(),  // Start from January 1 of the current year
+                max: null
+            };
+
+            // Function to apply date range
+            function applyRange(days) {
+                const now = new Date().getTime();
+                const startDate = new Date(now - days * 24 * 60 * 60 * 1000).getTime();
+                window[chartContainerId].updateOptions({
+                    xaxis: {
+                        min: startDate,
+                        max: now
+                    }
+                });
+            }
+
+            // Function to reset to original date range
+            function resetRange() {
+                window[chartContainerId].updateOptions({
+                    xaxis: {
+                        min: originalRange.min,
+                        max: originalRange.max
+                    }
+                });
+            }
+
+            // Store initial date range for resetting
+            window[chartContainerId].w.globals.seriesX[0].forEach((point) => {
+                if (!originalRange.max || point > originalRange.max) originalRange.max = point;
+            });
+
+            // Event listeners for range buttons
+            document.querySelector("#range-line-1d").addEventListener("click", () => applyRange(1));
+            document.querySelector("#range-line-1w").addEventListener("click", () => applyRange(7));
+            document.querySelector("#range-line-1m").addEventListener("click", () => applyRange(30));
+            document.querySelector("#range-line-6m").addEventListener("click", () => applyRange(182));
+            document.querySelector("#range-line-1y").addEventListener("click", () => applyRange(365));
+            document.querySelector("#range-line-ytd").addEventListener("click", () => {
+                const now = new Date();
+                const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
+                applyRange((now - startOfYear) / (1000 * 60 * 60 * 24));
+            });
+
+            // Reset button event listener
+            document.querySelector("#reset-line-range").addEventListener("click", resetRange);
+        }
+
+
+        function plotSalesBarChart(product_names, total_sales_by_product) {
+            // Log incoming data for debugging
+
+            // Check if the chart already exists and destroy it to avoid overlap
+            const chartContainerId = "#sales-bar-chart";
+            if (window[chartContainerId] instanceof ApexCharts) {
+                window[chartContainerId].destroy();
+            }
+
+            // Chart options configuration
+            const options = {
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    animations: {
+                        enabled: true
+                    }
+                },
+                series: [{
+                    name: 'Total Sales',
+                    data: total_sales_by_product
+                }],
+                xaxis: {
+                    categories: product_names,
+                    title: {
+                        text: 'Products' // Add title for x-axis
+                    },
+
+                },
+
+                yaxis: {
+                    title: {
+                        text: 'Sales Amount' // Add title for y-axis
+                    },
+                    labels: {
+                        formatter: (val) => val.toFixed(2) // Format y-axis labels to 2 decimal places
+                    }
+
+                },
+
+                colors: ['#FFA500'], // Orange color for the bar chart
+                tooltip: {
+                    y: {
+                        formatter: (val) => `${val.toFixed(2)}` // Format tooltip values
+                    }
+                },
+                dataLabels: {
+                    enabled: false // Enable data labels on bars
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false, // Vertical bars
+                        endingShape: 'rounded' // Rounded end shapes for bars
+                    }
+                }
+            };
+
+            // Initialize and render the chart
+            window[chartContainerId] = new ApexCharts(document.querySelector(chartContainerId), options);
+            window[chartContainerId].render();
+        }
+
+
+        function plotSalesGroupedBarChart(total_sales_by_shift) {
+            // Debugging: Log the incoming data structure for clarity
+
+            // Initialize a map to hold sales data by shift
+            const traces = {};
+            const shops = []; // Array to store unique shop names
+
+            // Organize sales data by shift name and shop name
+            total_sales_by_shift.forEach(shiftData => {
+                const shopName = shiftData[0];
+                const shiftName = shiftData[1];
+                const shiftSales = parseFloat(shiftData[2]);
+
+                // Ensure unique shop names are captured
+                if (!shops.includes(shopName)) {
+                    shops.push(shopName);
+                }
+
+                // Initialize the trace for the shift if it doesn't exist
+                if (!traces[shiftName]) {
+                    traces[shiftName] = {
+                        name: shiftName,
+                        data: Array(shops.length).fill(0) // Create an array filled with zeros
+                    };
+                }
+
+                // Get the index of the shop name to populate sales data correctly
+                const shopIndex = shops.indexOf(shopName);
+                if (shopIndex !== -1) {
+                    traces[shiftName].data[shopIndex] = shiftSales; // Assign sales to the correct index
+                }
+            });
+
+            // Convert traces object to an array for ApexCharts
+            const series = Object.values(traces).filter(trace => trace.data.some(sales => sales > 0)); // Filter out empty sales traces
+
+            // Chart options configuration
+            const options = {
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    stacked: true,
+                    animations: {
+                        enabled: true
+                    }
+                },
+                series: series,
+                xaxis: {
+                    categories: shops, // Use unique shop names
+                    title: {
+                        text: 'Shop Names' // Title for the x-axis
+                    }
+                },
+                colors: ['#FF6347', '#4682B4', '#32CD32', '#FFD700', '#8A2BE2'], // Colors for each shift
+                tooltip: {
+                    y: {
+                        formatter: (val) => `${val.toFixed(2)}` // Format tooltip values as currency
+                    }
+                },
+                dataLabels: {
+                    enabled: false // Enable data labels on bars
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false, // Vertical bars
+                        endingShape: 'rounded' // Rounded end shapes for bars
+                    }
+                },
+                legend: {
+                    show: false,
+                }
+            };
+
+            // Initialize and render the chart
+            const chartContainerId = "#sales-grouped-bar-chart";
+            if (window[chartContainerId] instanceof ApexCharts) {
+                window[chartContainerId].destroy(); // Destroy previous chart instance
+            }
+            window[chartContainerId] = new ApexCharts(document.querySelector(chartContainerId), options);
+            window[chartContainerId].render();
+        }
+
+
+        function plotSalesDonutChart(shops_names, total_sales_by_shop) {
+            // Debugging: Log the incoming data for verification
+            console.log("Shops names:", shops_names);
+            console.log("Total sales by shop:", total_sales_by_shop);
+
+            // Chart options configuration
+            const options = {
+                chart: {
+                    type: 'donut',
+                    height: 350,
+                    animations: {
+                        enabled: true // Enable animations for the chart
+                    },
+                    toolbar: {
+                        show: true
+                    }
+                },
+                series: total_sales_by_shop.map(str => parseInt(parseFloat(str))),
+                labels: shops_names,
+
+                tooltip: {
+                    y: {
+                        formatter: (val) => `${val.toFixed(2)}`, // Format tooltip values as currency
+                    }
+                },
+
+                legend: {
+                    position: 'bottom', // Position of the legend
+                    horizontalAlign: 'center', // Align legend horizontally
+                    fontSize: '12px',
+                    itemMargin: {
+                        horizontal: 10,
+                        vertical: 5
+                    },
+                    onItemClick: {
+                        toggleDataSeries: true // Allow toggling visibility of segments
+                    }
+                }
+            };
+
+            // Initialize and render the chart
+            const chartContainerId = "#sales-donut-chart";
+            if (window[chartContainerId] instanceof ApexCharts) {
+                window[chartContainerId].destroy(); // Destroy previous chart instance
+            }
+            window[chartContainerId] = new ApexCharts(document.querySelector(chartContainerId), options);
+            window[chartContainerId].render();
+        }
+    });
+</script>
+{% endblock %}

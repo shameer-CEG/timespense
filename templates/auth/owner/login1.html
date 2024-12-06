@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block title %}Employee Login{% endblock title %}
+{% block body %}
+<div class=" d-md-flex d-block mb-3">
+  <div class="mt-4 mx-2 mx-md-auto col-md-8 ">
+    <h1 class="text-center mb-3">WELCOME TO DAIRY <br>  MANAGEMENT SYSTEM</h1>
+    <div class="container-fluid p-md-5 p-4 border rounded border-2 border-mine bg-light" style="height: 500px;">
+        <div class="container ">
+            <h2>Login</h2>
+            <form method="post" action="{% url 'login' %}">
+              {% csrf_token %}
+              {{ form.email|as_crispy_field }}
+              <div class="password-wrapper">
+                  {{ form.password|as_crispy_field }}
+                  <span toggle="#password-field" class="fa fa-fw fa-eye field-icon toggle-password"></span>
+              </div>
+              <button type="submit" class="btn btn-primary">Log In</button>
+            </form>
+            <br>
+            <a href="{% url 'signup' %}">Don't have an account? Sign Up</a>
+            <a href="{% url 'password' %}">Forgot your password?</a>
+            
+        </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script>
+  document.querySelector('.toggle-password').addEventListener('click', function (e) {
+      const passwordField = document.querySelector('#password-field');
+      if (passwordField.getAttribute('type') === 'password') {
+          passwordField.setAttribute('type', 'text');
+          this.classList.remove('fa-eye');
+          this.classList.add('fa-eye-slash');
+      } else {
+          passwordField.setAttribute('type', 'password');
+          this.classList.remove('fa-eye-slash');
+          this.classList.add('fa-eye');
+      }
+  });
+</script>
+
+<style>
+  .password-wrapper {
+      position: relative;
+  }
+  .field-icon {
+      position: absolute;
+      right: 10px;
+      top: 70%;
+      transform: translateY(-50%);
+      cursor: pointer;
+  }
+</style>
+
+<script>
+  history.replaceState(null, null, "/");
+</script>
+
+{% endblock body %}

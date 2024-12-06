@@ -1,0 +1,118 @@
+{% extends "tables/table.html" %}
+{% block tableTitle %}
+<div class="row mb-4">
+    <div class="col-9">
+      <h2>{{ shop.shop_name|default:"Over All" }} Expense Types </h2>
+    </div>
+    {% if shop.shop_id %}
+    <div class="col-1 ms-auto me-5">
+      <button class="btn btn-primary py-1 px-3 fw-bold fs-4" data-bs-toggle="modal"
+      data-bs-target="#addDataModal">+</button>
+    </div>
+    {% endif %}
+</div>
+    
+{% include 'modals/add_data.html' %}
+{% endblock tableTitle %}
+
+
+{% block tableHead %}
+<tr>
+    <th class="bg-secondary text-white">S.No</th>
+    <th class="bg-secondary text-white">Name</th>
+    <th class="bg-secondary text-white">Created Date</th>
+    <th class="bg-secondary text-white">{% if shop.shop_id %}Action{% else %}Shop Name{% endif %}</th>
+</tr>
+{% endblock tableHead %}
+{% block tableBody %}
+{% if messages %}
+<div>
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+{% for expenseType in expenseTypes %}
+<tr>
+    <td class="fw-bold ">{{ forloop.counter }}</td>
+
+    <td class="fw-bold">{{ expenseType.name }}</td>
+    <td class="fw-bold  ">{{ expenseType.created_at }}</td>
+    <td class="fw-bold   p-0">
+        {% if shop.shop_id %}
+
+        <a class="btn border border-0  text-primary ms-0"
+            href="{% url 'update_expense_type' shop_id=shop.encoded_shop_id expense_type_id=expenseType.encoded_expense_type_id  %}">
+            <i class="fa-solid fa-pen-to-square"></i>
+        </a>
+
+        <button type="button" class="btn text-danger border-0 delete-button" data-bs-toggle="modal"
+            data-bs-target="#deleteModal" data-expenseType-id="{{ expenseType.encoded_expense_type_id }}"
+            data-expenseType-name="{{ expenseType.name }}">
+            <i class="fa-solid fa-trash"></i>
+        </button>
+        {% else %}
+        {{ expenseType.shop.shop_name }}
+        {% endif %}
+
+    </td>
+
+</tr>
+
+
+{% endfor %}
+
+{% if shop.shop_id %}
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" id="deleteForm" action="#">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <p>Are you sure you want to delete <span id="expenseTypeName"></span>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // JavaScript to update modal with the correct expenseType data
+    document.querySelectorAll('.delete-button').forEach(button => {
+        button.addEventListener('click', function () {
+            const expenseTypeId = this.dataset.expensetypeId;
+            const expenseTypeName = this.dataset.expensetypeName;
+
+
+            // Update form action dynamically with encoded expenseType ID
+            document.getElementById('deleteForm').action = `{% url 'delete_expense_type' shop_id=shop.encoded_shop_id expense_type_id='REPLACE_ID' %}`.replace('REPLACE_ID', expenseTypeId);
+            document.getElementById('expenseTypeName').innerText = expenseTypeName;
+        });
+    });
+</script>
+{% endif %}
+{% endblock tableBody %}
+
+
+{% block script %}
+{
+extend: 'searchPanes',
+config: {
+cascadePanes: true,
+viewTotal: true,
+collapse: false,
+
+columns: [3,4,5],
+
+}
+}
+{% endblock script %}

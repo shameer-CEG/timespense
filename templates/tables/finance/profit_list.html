@@ -1,0 +1,235 @@
+{% extends "tables/block_table.html" %}
+{% load crispy_forms_tags %}
+
+{% block tableTitle %}
+<div class="row mb-4">
+  <div class="col-9">
+    <h2>{{ shop.shop_name|default:"Over All" }} Profit Recorrds </h2>
+  </div>
+  {% if shop.shop_id %}
+  <div class="col-1 ms-auto me-5">
+    <button class="btn btn-primary py-1 px-3 fw-bold fs-4" data-bs-toggle="modal"
+    data-bs-target="#addDataModal">+</button>
+  </div>
+  {% endif %}
+</div>
+{% include 'modals/add_data.html' %}
+
+{% endblock tableTitle %}
+
+{% block filter %}
+{% if messages %}
+<div>
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+<div class="container">
+    <div class="row mb-3  row-cols-md-auto g-3 align-items-center">
+        <div class="col-12">
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" class="form-control" placeholder="Start Date">
+        </div>
+        <div class="col-12">
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" class="form-control" placeholder="End Date">
+        </div>
+        <div class="col-12  mt-5 ">
+            <button id="filterButton" class="btn btn-primary">Filter</button>
+            <button id="reserButton" class="btn btn-secondary ms-2">reset</button>
+        </div>
+    </div>
+</div>
+{% endblock filter %}
+
+
+{% block tableHead %}
+<tr>
+    <th class="bg-secondary text-white">S.No</th>
+    <th class="bg-secondary text-white">Date</th>
+    <th class="bg-secondary text-white">Total Income</th>
+    <th class="bg-secondary text-white">Total Expenses</th>
+    <th class="bg-secondary text-white">Cost of goods sold</th>
+    <th class="bg-secondary text-white">Operating Expenses</th>
+    <th class="bg-secondary text-white">Gross Profit</th>
+    <th class="bg-secondary text-white">Net Profit</th>
+    <th class="bg-secondary text-white">Shortage</th>
+    <th class="bg-secondary text-white">Loss</th>
+    <th class="bg-secondary text-white">Created At</th>
+    {% if shop.shop_id %}
+    <th class="bg-secondary text-white">Action</th>
+    {% else %}
+    <th class="bg-secondary text-white">Shop name</th>
+    {% endif %}
+</tr>
+{% endblock tableHead %}
+
+{% block tableBody %}
+{% for profit in profits %}
+<tr>
+    <td class="fw-bold text-break">{{ forloop.counter }}</td>
+    <td class="fw-bold text-break">{{ profit.date }}</td>
+    <td class="fw-bold text-break">{{ profit.total_income }}</td>
+    <td class="fw-bold text-break">{{ profit.total_expenses }}</td>
+    <td class="fw-bold text-break">{{ profit.cost_of_goods_sold }}</td>
+    <td class="fw-bold text-break">{{ profit.operating_expenses }}</td>
+    <td class="fw-bold text-break">{{ profit.gross_profit }}</td>
+    <td class="fw-bold text-break">{{ profit.net_profit }}</td>
+    <td class="fw-bold text-break">{{ profit.shortage }}</td>
+    <td class="fw-bold text-break">{{ profit.loss }}</td>
+    <td class="fw-bold text-break">{{ profit.created_at }}</td>      
+    
+    {% if shop.shop_id  %}
+    <td class="fw-bold text-break p-0">
+        <a class="btn border border-0  text-primary ms-0"
+            href="{% url 'update_profit' shop_id=shop.encoded_shop_id  shop_id=shop.encoded_shop_id profit_id=profit.encoded_profit_id %}">
+            <i class="fa-solid fa-pen-to-square"></i>
+        </a>
+
+        <button type="button" class="btn text-danger border-0 delete-button" data-bs-toggle="modal"
+        data-bs-target="#deleteModal" data-profit-id="{{ profit.encoded_profit_id }}"
+        data-profit-name="{{profit.date}}">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+
+    </td>
+    {% else %}
+    <td class="fw-bold">{{ profit.shop.shop_name }}</td>
+    {% endif %}
+</tr>
+{% endfor %}
+
+
+  
+{% if shop.shop_id %}
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" id="deleteForm" action="#">
+        <div class="modal-body">
+          {% csrf_token %}
+          <p>Are you sure you want to delete <span id="profitName"></span>?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger">Delete</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // JavaScript to update modal with the correct profit data
+  document.querySelectorAll('.delete-button').forEach(button => {
+    button.addEventListener('click', function () {
+      const profitId = this.dataset.profitId;
+      const profitName = this.dataset.profitName;
+      
+      // Update form action dynamically with encoded profit ID
+      document.getElementById('deleteForm').action = `{% url 'delete_profit' shop_id=shop.encoded_shop_id profit_id='REPLACE_ID' %}`.replace('REPLACE_ID', profitId);
+      document.getElementById('profitName').innerText = profitName;
+    });
+  });
+</script>
+{% endif %}
+
+
+{% endblock %}
+
+
+{% block footscript %}
+if ($('#baseTable tfoot').length === 0) {
+    let columnCount = $('#baseTable thead tr th').length; // Count columns in the table
+    let rowCount = 9; // Define the number of rows you want in the tfoot
+    let tfoot = $('<tfoot></tfoot>'); // Create tfoot element
+
+    // Loop to create each row
+    for (let row = 0; row < rowCount; row++) {
+        let footerRow = $('<tr class="dataFooter" id="footer-row-' + row + '"></tr>'); // Create a new row for each iteration
+
+        // Loop to create each cell within the row
+        for (let col = 0; col < columnCount; col++) {
+            footerRow.append('<th></th>'); // Append an empty <th> for each column in the row
+        }
+
+        // Append the completed row to tfoot
+        tfoot.append(footerRow);
+    }
+
+    // Append the tfoot to the baseTable
+    $('#baseTable').append(tfoot);
+}
+
+{% endblock footscript %}
+
+{% block script %}
+{
+extend: 'searchPanes',
+config: {
+cascadePanes: true,
+viewTotal: true,
+collapse: false,
+columns: [3, 5],
+}
+}
+{% endblock %}
+
+
+{% block footercall %}
+"footerCallback": function (row, data, start, end, display) {
+    let api = this.api();
+
+    // Define columns and their labels for easy reference
+    const metrics = [
+        { name: 'Total Income', index: 2 },
+        { name: 'Total Expenses', index: 3 },
+        { name: 'Cost of Goods Sold', index: 4 },
+        { name: 'Operating Expenses', index: 5 },
+        { name: 'Gross Profit', index: 6 },
+        { name: 'Net Profit', index: 7 },
+        { name: 'Shortage', index: 8 },
+        { name: 'Loss', index: 9 }
+    ];
+
+    // Loop through each metric and create a row with totals for Overall and Displayed
+    metrics.forEach((metric, rowIndex) => {
+        rowIndex = rowIndex + 1
+        // Calculate total for all pages
+        let totalAllPages = api.column(metric.index, { page: 'all' })
+            .data()
+            .reduce((a, b) => a + (parseFloat(b) || 0), 0)
+            .toFixed(2);
+
+        // Calculate total for the current page
+        let totalCurrentPage = api.column(metric.index, { page: 'current' })
+            .data()
+            .reduce((a, b) => a + (parseFloat(b) || 0), 0)
+            .toFixed(2);
+
+        // Select the corresponding row by index and update the content
+        let footerRow = $(`#footer-row-${rowIndex}`); // Select the dynamic row by id
+
+        // Update the footer row with the totals
+        footerRow.find('th:nth-child(1)').text(metric.name);
+        footerRow.find('th:nth-child(2)').html(`
+            <div><strong>Overall Total:</strong></div>
+        `);
+        footerRow.find('th:nth-child(3)').html(`
+            <div>${totalAllPages}</div>
+        `);
+        footerRow.find('th:nth-child(4)').html(`
+            <div><strong>Displayed Total:</strong></div>
+        `);
+        footerRow.find('th:nth-child(5)').html(`
+            <div>${totalCurrentPage}</div>
+        `);
+    });
+}
+{% endblock %}
